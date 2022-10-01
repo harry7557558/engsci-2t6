@@ -1,0 +1,174 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{amsmath}
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{9.9in}
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\evensidemargin}{0.0in}
+\setlength{\topmargin}{-2.5 cm}
+\setlength{\parskip}{0.5\baselineskip} % space between paragraphs
+\setlength{\parindent}{0 cm} % increase this if you like paragraphs to be indented
+
+\pagestyle{empty}
+
+\newcommand{\e}{\mathrm{e}}
+
+\begin{document}
+
+\begin{center}
+
+\bf{\LARGE
+On the Relationship between Characteristics \\ and Parameters of Simple Pendulums
+}
+
+\rm{\large
+Harry Chen\\
+September 30, 2022
+}
+
+\end{center}
+
+
+\section{Introduction}
+
+The simple pendulum is one of the primary primitives in dynamics. While the experiments investigating the motion of a pendulum appear easy to conduct, the motion of a simple pendulum contains phenomena like harmonic motion and dissipation, and the relationship between characteristics like period and damping factor and parameters like string length and initial amplitude is the objective of this report. This report investigates the dependence between the period of a simple pendulum and the initial angle, and two models for the decay of the pendulum's amplitude over time.
+
+In high school and college physics texts, the formula for the period of a pendulum is often given as: ~\cite{openstax-physics}
+
+\begin{equation}
+\label{equ:T}
+T=2\pi\sqrt{\frac{L}{g}}
+\end{equation}
+
+where $L$ is the length of the pendulum and $g$ is the acceleration due to gravity. When $T$ is in seconds and $L$ is in meters, the formula $T=2\sqrt{L}$ is often used in practice. Equation \ref{equ:T} suggests the period of the pendulum is independent of the angle. However, the experiment result shows that the period of the pendulum increases as the magnitude of the angle increases, and equation \ref{equ:T} only applies to small angles. For large angles, the following series expansion has been proposed: ~\cite{hyperphysics-pendl}
+
+\begin{equation}
+\label{equ:T1}
+T=2\pi\sqrt{\frac{L}{g}}\left(1+\frac{1}{16}\theta_0^2+\mathrm{O}\left(\theta_0^4\right)\right)
+\end{equation}
+
+This equation suggests the period of a simple pendulum as a function of angle can be approximated by a parabola symmetrical about $\theta=0$. The experiment result shows the parabola is not exactly symmetrical about $\theta=0$ and the dependency between period and angle is less significant compared to the prediction of Equation \ref{equ:T1}. This disagreement may be caused by the damping of the pendulum and other experimental errors.
+
+The motion of a pendulum with a damping force proportional to its velocity can be modeled by the following angle-time relationship: ~\cite{hyperphysics-oscda}
+
+\begin{equation}
+\label{equ:damped-osc}
+\begin{aligned}
+\theta(t)
+&= \theta_{amp}(t) \cdot \theta_{osc}(t) \\
+&= \theta_0 \e^{-t/\tau} \cdot \cos\left(\frac{2\pi}{T}t+\phi\right)
+\end{aligned}
+\end{equation}
+
+where $\theta_0$ is the initial angle (or amplitude), $T$ is the period, $\tau$ is a coefficient related to damping, and $\phi$ is the phase shift. In the equation, the angle function $\theta(t)$ is the product of two functions of time: the amplitude function $\theta_{amp}(t)=\theta_0\e^{-t/\tau}$, and the oscillation function $\theta_{osc}(t)$. In engineering, the Q factor is often used to measure the damping of an oscillator. It is a dimensionless coefficient given by the following formula: ~\cite{wikipedia-q}
+
+\begin{equation}
+\label{equ:q}
+Q=2\pi\frac{\tau}{T}
+\end{equation}
+
+In a perfectly exponentially decaying case, after $n$ periods, an oscillator has its amplitude decayed to $\e^{-2\pi n/Q}$ of its original amplitude. But in reality, the decay of the amplitude in a pendulum is rarely perfectly exponential. Hence, the following function term has been introduced, which is based on the assumption that the damping force is proportional to the square of the speed: ~\cite{quadratic-damp}
+
+\begin{equation}
+\label{equ:quadratic-damp}
+\theta_{amp}(t) = \frac{\theta_0}{1+t/\tau}
+\end{equation}
+
+With the same $\theta_0$ and $\tau$, both amplitude functions have the same initial amplitude and decay rate. However, the quadratically-damped model (called "rational model" in the remaining of this paper) decays slower as time proceeds, meaning it takes longer for the oscillator to damp to a certain amplitude. This paper shows the rational model produces a better fit to experimental data and discusses this effect in Section \ref{section:q}.
+
+
+\section{Methods and Procedures}
+
+\begin{figure}[!htb]
+\minipage{0.32\textwidth}
+\includegraphics[width=\linewidth]{img-setup.jpg}
+\caption{The overall pendulum setup}\label{fig:setup}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+\includegraphics[width=\linewidth]{img-knot.jpg}
+\caption{The pivot point of the pendulum}\label{fig:knot}
+\endminipage\hfill
+\minipage{0.32\textwidth}
+\includegraphics[width=\linewidth]{img-lock.jpg}
+\caption{The lock as the mass}\label{fig:lock}
+\endminipage
+\end{figure}
+
+The homemade pendulum used for experiments in this paper is made of a metal lock hanging on a thin sewing thread tied to the middle top of a black rectangular frame. The lock is chosen as the mass for its high density and thus has a higher resistance to air friction. The thread is chosen for its low mass and internal damping. These properties reduce the uncertainty caused by dissipation in the period-angle experiment. I chose a black rectangular frame to attach the spring because it makes it easier to track the location of the lock related to the frame using computer vision software. During swinging, the lock oscillates in the air without making contact with a solid object.
+
+In the period-angle experiment, the stretched length of the thread is $30\mathrm{cm}$, although the length of the pendulum used in the analysis is $35\mathrm{cm}\pm1\mathrm{cm}$ due to the consideration of the lock size. Trials are conducted for angles between $-90^\circ$ to $90^\circ$ with an increment of $20^\circ$. In each trial, the string is stretched and the lock is released from the specified angle, and one-twentieth of the time for the lock to complete 20 cycles is recorded as the period. Each trial is repeated 3 times. The angles are chosen for the convenience of measuring using a protractor with degree scales while skipping the zero angle, which has an undefined period. Angles are converted to radians in analysis. I measured the time of 20 cycles instead of 1 cycle to reduce the effect of human error on the period measurement. I started over the experiment after doing all trials once instead of repeating each angle trial 3 times in a row because I want to reduce the possible effects of previous trials on the current trial (ex. thread becoming loose.)
+
+In the angle-time experiment, the lock is hanged on a thread with a rest length of $20\mathrm{cm}$ and released from an angle of $30^\circ$. Intuitively, a shorter spring involves higher damping, which makes it faster for the amplitude of the pendulum to decay to a certain value. The angle is chosen to be small to reduce phase shift caused by the dependency of period and angle. A 60-second video is recorded and analyzed using OpenCV.
+
+
+\section{Results and Analysis}
+
+\subsection{Period vs. Angle}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{period-angle.png}
+\end{center}
+\caption{Period-Angle Plot of a $0.35\mathrm{m}\pm0.01\mathrm{m}$ Pendulum}
+\label{fig:period-angle}
+\end{figure}
+
+For the period-angle data, the period for an angle is taken as the mean of the three measures, and the uncertainty is taken as the minimum value required to cover all uncertainties of individual measurements. A parabolic function is used to fit the period vs. angle relationship. The curve of best fit has an equation $T(\theta)=T_0\left(1+b\theta+c\theta^2\right)$, where $T_0=1.20\mathrm{s}\pm0.02\mathrm{s}$, $b=0.003\pm0.001$, and $c=0.030\pm0.002$. The axis of symmetry of the parabola is $\theta=-\frac{b}{2c}=-0.05\pm0.02$.
+
+As shown in Figure \ref{fig:period-angle}, the plot of the data has a roughly parabolic shape. The data is well-modeled by the parabolic function because all residuals are within the uncertainty interval. However, the value and uncertainty of its axis of symmetry suggest the parabola is not symmetrical about $\theta=0$. The residual has a slight, regular pattern roughly symmetrical about $\theta=0.2$. The $c$ value fitted from the data is about half of the magnitude as the value suggested by Equation \ref{equ:T1}.
+
+The predicted period using the formula $T=2\sqrt{L}$ is $1.18\mathrm{s}\pm0.01\mathrm{s}$, merely touching the two lowest data points. Using the $T_0$ value and uncertainty generated by regression, the curve of best fit is within the uncertainty when $-0.5<\theta<0.4$. This suggests the dependence between the period and the angle can be ignored for $|\theta|<0.4$.
+
+\subsection{Angle vs. Time}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{angle-time.png}
+\end{center}
+\caption{Angle-Time Plot of a Simple Pendulum}
+\label{fig:angle-time}
+\end{figure}
+
+The angle-time data is calculated from the lock positions tracked from the video. It contains about 1800 data points. The angles are subtracted from their mean to adjust bias during tracking caused by a skewed frame. Equation \ref{equ:damped-osc} is used to fit the the data.
+
+The curve of best fit has a $\tau$ value of $48.1\mathrm{s}\pm0.1\mathrm{s}$ and a period of $1.03091\mathrm{s}\pm0.00005\mathrm{s}$. As shown in Figure \ref{fig:angle-time}, it does not closely match the amplitude of the data: it underestimates the amplitude at the beginning at the end of the time interval and overestimates the amplitude at the middle of the time interval. The residual of the fit oscillates with a higher amplitude at the ends.
+
+\subsection{Amplitude vs. Time}
+
+\begin{figure}[!ht]
+\begin{center}
+\includegraphics[width=0.7\textwidth]{amplitude-time.png}
+\end{center}
+\caption{Amplitude-Time Plot of a Simple Pendulum}
+\label{fig:amplitude-time}
+\end{figure}
+
+The amplitude-time graph in Figure \ref{fig:amplitude-time} is generated by taking the absolute value of the extrema on the angle-time graph. It is noisy, primarily due to frame delay in the video skipping the actual extrema. But the noise is not a concern in this analysis because it is visually smaller than the uncertainties.
+
+Overall, the plot is nonlinear with decaying amplitude and rate of change. Two decaying models introduced in the introduction are fit to the data. The exponential decay model has an initial amplitude of $0.281\mathrm{s}\pm0.004\mathrm{s}$ and a $\tau$ value of $49\mathrm{s}\pm1\mathrm{s}$. The rational decay model has an initial amplitude of $0.326\pm0.005\mathrm{s}$ and a $\tau$ value of $24.1\pm0.7s$. I don't consider the exponential decay model to be a good model because it does not closely fit the data, and the curve goes beyond the uncertainty interval at $t=0\mathrm{s}$. Also, there is a concave downward pattern in its residual. I consider the rational decay model to be appropriate for its close fit and no noticeable pattern in the residual. The advantage of the rational model over the exponential model is also seen from the coefficient of determination, where the rational model has $R^2=0.93$, higher than the exponential model's $R^2=0.88$.
+
+\subsection{Discussion on the Q Factor} \label{section:q}
+
+The Q factor of the oscillation is calculated using Equation \ref{equ:q}. Using $\tau$ value obtained from fitting the exponential model, the $Q$ is calculated to be $298\pm6$. Using $\tau$ value obtained from fitting the rational model, the initial $Q$ is calculated to be $147\pm4$. The exponential model has a $Q$ value about twice as high as that of the exponential model. However, since the uncertainty and residual showed that the exponential model is not an appropriate fit, the Q factor may not be constant over time, and the Q factor calculated from the exponential fit may be an average of $Q$ values throughout the time interval.
+
+Using the formula $\theta_f/\theta_i=\e^{-2\pi n/Q}$, the Q factor during a shorter time interval can be determined. Consider the interval from $t=0\mathrm{s}$ to $t=10\mathrm{s}$: there are $9.7002\pm0.0004$ periods in this interval, the amplitudes at the endpoints are respectively $0.32\pm0.01$ and $0.21\pm0.01$, the Q factor is calculated to be $145\pm16$, matching the Q factor calculated from the rational model. At $t=10\mathrm{s}$ and $t=20\mathrm{s}$, the amplitudes are $0.21\pm0.01$ and $0.17\pm0.01$, the Q factor calculated in between is $290\pm80$, matching the Q factor of the exponential model. Between $t=20\mathrm{s}$ and $t=40\mathrm{s}$, the Q factor is $450\pm130$, exceeding the Q factor of the exponential model. This shows the Q factor increases as time increases, and fitting the rational model captures the Q factor near the start of the oscillation.
+
+% https://www.desmos.com/calculator/fb5ay3gfny
+
+
+\section{Conclusion}
+
+The period-angle experiment shows the period of a pendulum is dependent on the angle and increases as the magnitude of the angle increases, and their relationship can be well-modeled by a parabolic function. While there is a regular pattern in the residual when fitted to a parabola, considering they are small and are within the data uncertainty, I account for the cause of this pattern for experimental dependencies. The formula $T=2\sqrt{L}$ applies for small $\theta$, or, $|\theta|<0.4$. Due to the damping of the pendulum angle in the experiment and other uncertainties, it is not sufficient to show whether the period-angle relationship resembles or deviates from Equation \ref{equ:T1}. Future experiments may be conducted with time measured over a fewer number of periods to reduce the effect of damping on the data.
+
+The amplitude-time data shows the amplitude of the pendulum decays in a nonlinear pattern, which is more accurately modeled by a rational function than an exponentially decaying function. The Q factor calculated from regression parameters of the rational model matches the Q factor calculated from the decay of the amplitude near the start of the curve. The latter Q factor decreases as the motion progresses.
+
+There are numerous sources of uncertainty in this experiment. One observation to note is that the pendulum does not always swing "back and forth": the motion gradually turned into an elliptical motion in 3D, which deviates from the assumption that the weight moves on a two-dimensional plane. A factor contributing to this error is the thread being simply tied to the top of the frame and able to swing freely in different directions. The elliptical motion may be reduced by restricting the motion of the thread by placing a rigid plate near the pivot point. The largest error in this experiment is very likely the frame. As shown in Figure \ref{fig:setup}, the vertical columns of the frame are not completely straight, and the frame moved as the pendulum swan, making the pivot point of the pendulum movable. This can be improved in the future by using a more rigid frame. Human error is responsible for uncertainty in the experiment. It took several seconds before I pressed the camera button after I released the pendulum, which allowed damping to occur during this time period. Although I released the pendulum from $30^\circ$ ($0.52$ radians), the data suggests the pendulum has an initial amplitude of $0.32\pm0.01$ radians, which is considerably less than the intended angle. This can be resolved by collaborating with another person or using automated equipment.
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
+
+
