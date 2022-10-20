@@ -18,7 +18,7 @@ def solve_truss(joints, members, loads):
     m = len(joints)*2  # number of equations
     n = len(members)  # number of unknowns
     print(m, "equations,", n, "unknowns")
-    assert n < m
+    assert n <= m
     joints_i = {}
     for key in joints.keys():
         joints[key] = np.array(joints[key], dtype=np.float64)
@@ -44,13 +44,16 @@ def solve_truss(joints, members, loads):
 
     # vector: at each joint, member force + load = 0
     net_load = np.zeros(2)
+    net_moment = 0.0
     b = np.zeros(m)
     for (j, load) in loads.items():
-        net_load += load
         i = joints_i[j]
         b[2*i] -= load[0]
         b[2*i+1] -= load[1]
-    print("Net force:", net_load)
+        pos = joints[j]
+        net_load += load
+        net_moment += pos[0]*load[1]-pos[1]*load[0]
+    print("Net force/moment:", net_load, net_moment)
 
     # solve the linear system
     #A, b = A.T@A, A.T*b
@@ -359,6 +362,36 @@ def assignment_5_problem_7():
     solve_truss(joints, members, loads)
 
 
+def quiz_6():
+    """WARNING:
+        If you did all your truss homework using this script (like me),
+        you won't end well on CIV102 quiz 6.
+    """
+    joints = {
+        'A': (-2, 2),
+        'B': (-1, 2),
+        'C': (-1, 3),
+        'D': (0, 2),
+        'E': (0, 3),
+        'F': (1, 2),
+        'G': (0, 1),
+        'H': (1, 1),
+        'I': (0, 0),
+        'J': (1, 0)
+    }
+    members = [tuple(ab) for ab in [
+        'AB', 'AC', 'BC', 'CE', 'BE', 'BD', 'DE', 'EF',
+        'DF', 'DG', 'FG', 'FH', 'GH', 'GI', 'HI', 'HJ', 'IJ'
+    ]]
+    loads = {
+        'A': (0, -10),
+        'B': (0, -20),
+        'C': (15, 0),
+        'F': (-2.5, 0),
+        'I': (-12.5, 30)
+    }
+    solve_truss(joints, members, loads)
+
 if __name__ == "__main__":
     #assignment_4_problem_3()
     #assignment_4_problem_4()
@@ -366,5 +399,6 @@ if __name__ == "__main__":
     #assignment_5_problem_2()
     #assignment_5_problem_4b(5, 3.01, 3.77)
     #assignment_5_problem_4b(6, 5.80, 11.61)
-    assignment_5_problem_6()
+    #assignment_5_problem_6()
     #assignment_5_problem_7()
+    quiz_6()
