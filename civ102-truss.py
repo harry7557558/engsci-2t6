@@ -4,12 +4,13 @@
 
 import numpy as np
 import scipy.sparse
-from scipy.sparse.linalg import eigs, lsqr
+from scipy.linalg import eig
+from scipy.sparse.linalg import lsqr
 
 
-def format_float(x):
+def format_float(x, s=3):
     """Slide-rule precision"""
-    sigfig = 4 if np.log10(abs(x))%1.0 < np.log10(2) else 3
+    sigfig = s+1 if np.log10(abs(x))%1.0 < np.log10(2) else s
     return f"{{:.{sigfig}g}}".format(x)
 
 
@@ -40,7 +41,10 @@ def solve_truss(joints, members, loads):
     A = scipy.sparse.coo_matrix(
         ([a[0] for a in A], ([a[1] for a in A], [a[2] for a in A])),
         shape=(m, n))
-    print("Minimum eigenvalue:", sorted(abs(eigs(A.T@A)[0]))[0])
+    if True:  # check degeneracy
+        ATA = (A.T@A).todense()
+        eigs = abs(eig(ATA)[0])
+        print("Minimum eigenvalue:", sorted(eigs)[0])
 
     # vector: at each joint, member force + load = 0
     net_load = np.zeros(2)
@@ -59,12 +63,16 @@ def solve_truss(joints, members, loads):
     #A, b = A.T@A, A.T*b
     x, istop, itn, normr = lsqr(A, b)[:4]
     print("Numerical error:", normr)
+    results = {}
     for (member, load) in zip(members, x):
         name = ''.join(member)
         if abs(load) < min(1e-6, 10.0*normr):
+            results[name] = 0.0
             print(name, 0)
             continue
+        results[name] = float(format_float(load, 6))
         print(name, format_float(load))
+    return results
 
 
 def assignment_4_problem_3():
@@ -209,7 +217,10 @@ def assignment_5_problem_1():
 
 
 def assignment_5_problem_2():
-    """A long Warren truss"""
+    """A long Warren truss
+        Note: a general formula can be derived using methods of sections
+            https://www.desmos.com/calculator/eg1jkd16rx
+    """
     # joints
     dx = 3000
     dy = 4000
@@ -392,6 +403,89 @@ def quiz_6():
     }
     solve_truss(joints, members, loads)
 
+
+def assignment_6_problem_2():
+    """Truss deflection using virtual work"""
+    dx, dy = 3000, 4000
+    joints = {
+        'A': (0, 0),
+        'B': (dx, dy),
+        'C': (2*dx, 0),
+        'D': (3*dx, dy),
+        'E': (4*dx, 0),
+        'F': (5*dx, dy),
+        'G': (6*dx, 0),
+        'H': (7*dx, dy),
+        'I': (8*dx, 0)
+    }
+    members = [tuple(ab) for ab in [
+        'AB', 'AC', 'BC', 'BD', 'CD', 'CE', 'DE', 'DF',
+        'EF', 'EG', 'FG', 'FH', 'GH', 'GI', 'HI'
+    ]]
+    # actual load
+    loads = {
+        'A': (0, 120),
+        'I': (0, 120),
+        'C': (0, -80),
+        'E': (0, -80),
+        'G': (0, -80)
+    }
+    reals = solve_truss(joints, members, loads)
+    # dummy load
+    loads = {
+        'A': (0, 0.5),
+        'I': (0, 0.5),
+        'E': (0, -1)
+    }
+    dummies = solve_truss(joints, members, loads)
+    # export to a spreadsheet
+    members = [''.join(ab) for ab in members]
+    print(','.join(map(str, [reals[m] for m in members])))
+    print(','.join(map(str, [dummies[m] for m in members])))
+
+
+def assignment_6_problem_3():
+    """Truss deflection using virtual work"""
+    joints = {
+        'A': (0, 2),
+        'B': (2, 2),
+        'C': (0, 0),
+        'D': (2, 0),
+        'E': (4, 0)
+    }
+    members = [tuple(ab) for ab in [
+        'AB', 'AC', 'AD', 'CD',
+        'BD', 'BE', 'DE'
+    ]]
+    # actual load
+    loads = {
+        'A': (80, -40),
+        'C': (-160, -40),
+        'B': (80, 0),
+        'E': (0, 80)
+    }
+    reals = solve_truss(joints, members, loads)
+    # dummy load, 45deg
+    loads = {
+        'A': (2, -0.5),
+        'C': (-3, -0.5),
+        'E': (1, 1)
+    }
+    dummies1 = solve_truss(joints, members, loads)
+    # dummy load, horizontal
+    loads = {
+        'A': (0, 0),
+        'C': (-1, 0),
+        'E': (1, 0)
+    }
+    dummies2 = solve_truss(joints, members, loads)
+    # print to export to a spreadsheet
+    members = [''.join(ab) for ab in members]
+    print(','.join(map(str, [reals[m] for m in members])))
+    print(','.join(map(str, [dummies1[m] for m in members])))
+    print(','.join(map(str, [dummies2[m] for m in members])))
+
+
 if __name__ == "__main__":
     #assignment_4_problem_3()
     #assignment_4_problem_4()
@@ -401,4 +495,6 @@ if __name__ == "__main__":
     #assignment_5_problem_4b(6, 5.80, 11.61)
     #assignment_5_problem_6()
     #assignment_5_problem_7()
-    quiz_6()
+    #quiz_6()
+    #assignment_6_problem_2()
+    assignment_6_problem_3()
