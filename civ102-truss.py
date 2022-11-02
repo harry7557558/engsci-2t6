@@ -4,8 +4,7 @@
 
 import numpy as np
 import scipy.sparse
-from scipy.linalg import eig
-from scipy.sparse.linalg import lsqr
+from scipy.sparse.linalg import eigs, lsqr
 
 
 def format_float(x, s=3):
@@ -42,9 +41,8 @@ def solve_truss(joints, members, loads):
         ([a[0] for a in A], ([a[1] for a in A], [a[2] for a in A])),
         shape=(m, n))
     if True:  # check degeneracy
-        ATA = (A.T@A).todense()
-        eigs = abs(eig(ATA)[0])
-        print("Minimum eigenvalue:", sorted(eigs)[0])
+        l = eigs(A.T@A, k=1, which='SM')[0][0]
+        print("Minimum eigenvalue:", abs(l)**0.5)
 
     # vector: at each joint, member force + load = 0
     net_load = np.zeros(2)
@@ -486,6 +484,36 @@ def assignment_6_problem_3():
     print(','.join(map(str, [dummies2[m] for m in members])))
 
 
+def assignment_7_problem_2():
+    dx, dy = 3, 4
+    joints = {
+        'A': (0, 0),
+        'B': (dx, -dy),
+        'C': (2*dx, 0),
+        'D': (3*dx, -dy),
+        'E': (4*dx, 0),
+        'F': (5*dx, -dy),
+        'G': (6*dx, 0),
+        'H': (7*dx, -dy),
+        'I': (8*dx, 0),
+        'J': (9*dx, -dy),
+        'K': (10*dx, 0)
+    }
+    members = [tuple(ab) for ab in [
+        'AB', 'AC', 'BC', 'BD', 'CD', 'CE', 'DE', 'DF', 'EF', 'EG',
+        'FG', 'FH', 'GH', 'GI', 'HI', 'HJ', 'IJ', 'IK', 'JK'
+    ]]
+    loads = {
+        'A': (0, 200),
+        'K': (0, 200),
+        'C': (0, -100),
+        'E': (0, -100),
+        'G': (0, -100),
+        'I': (0, -100)
+    }
+    solve_truss(joints, members, loads)
+
+
 if __name__ == "__main__":
     #assignment_4_problem_3()
     #assignment_4_problem_4()
@@ -497,4 +525,5 @@ if __name__ == "__main__":
     #assignment_5_problem_7()
     #quiz_6()
     #assignment_6_problem_2()
-    assignment_6_problem_3()
+    #assignment_6_problem_3()
+    assignment_7_problem_2()
