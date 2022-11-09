@@ -1,17 +1,10 @@
-# Plot SFD/BMD, print key points
+# Plot shear/bending/tangent/deflection of a beam
+# Print extreme values
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from PiecewisePolynomial import PiecewisePolynomial
-
-
-def format_float(x, s=3):
-    """Slide-rule precision"""
-    if abs(x) <= 1e-12:
-        return '0'
-    sigfig = s+1 if np.log10(abs(x))%1.0 < np.log10(2) else s
-    return f"{{:.{sigfig}g}}".format(x)
 
 
 def solve_beam(
@@ -30,15 +23,18 @@ def solve_beam(
     vert = 0  # total vertical external load
     m_p1 = 0  # total external moment about p1
     for (x, f) in point_loads:
+        if x < x1 or x > x2:
+            continue
         vert += f
         m_p1 += f * (x-p1)
     for ((a, b), p) in uniform_loads:
+        assert x1 <= a < b <= x2
         f = (b-a) * p
         vert += f
         m_p1 += f * (0.5*(a+b)-p1)
     f2 = -m_p1 / (p2-p1)
     f1 = -vert - f2
-    print("Reaction forces:", format_float(-f1), format_float(-f2))
+    print("Reaction forces:", -f1, -f2)
 
     # key points
     # (x, point_load, uniform_load_delta)
@@ -47,6 +43,8 @@ def solve_beam(
         p2: [f2, 0]
     }
     def add_keypoint(x, f, dp):
+        if x < x1 or x > x2:
+            return
         if x not in keypoints_dict:
             keypoints_dict[x] = [0, 0]
         keypoints_dict[x][0] += f
@@ -90,30 +88,43 @@ def solve_beam(
     bmd = sfd.integrate()
     phi = bmd.mul(1.0/EI)
     slope = phi.integrate()
-    deflection = slope.integrate()
-    y1 = deflection.eval(p1)
-    y2 = deflection.eval(p2)
+    delta = slope.integrate()
+    y1 = delta.eval(p1)
+    y2 = delta.eval(p2)
     corr_m = (y2-y1)/(p2-p1)
     corr_b = y1 - corr_m*p1
     slope = slope.sub([corr_m])
-    deflection = deflection.sub([corr_b, corr_m])
+    delta = delta.sub([corr_b, corr_m])
 
     # plot graph
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(7.5, 7.5))
     ax4.set_xlabel("position (mm)")
+    
     ax1.set_ylabel("shear (N)")
-    ax2.set_ylabel("bending (N⋅mm)")
-    ax3.set_ylabel("tangent (rad)")
-    ax4.set_ylabel("deflection (mm)")
     ax1.plot(*sfd.get_plot_points(), '-')
-    #ax1.plot(*sfd.get_plot_key_points(), 'o')
+    #ax1.plot(*sfd.get_keypoints(), 'o')
+    maxsfd = sfd.get_optim(absolute=True)[1]
+    print("Max shear", maxsfd[1])    
+
+    ax2.set_ylabel("bending (N⋅mm)")
     ax2.plot(*bmd.get_plot_points(), '-')
-    #ax2.plot(*bmd.get_plot_key_points(), 'o')
+    #ax2.plot(*bmd.get_keypoints(), 'o')
+    maxbmd = bmd.get_optim()[1]
+    print("Max bending", maxbmd)
+    ax2.plot(maxbmd[0], maxbmd[1], 'o')
     ax2.set_ylim(ax2.get_ylim()[::-1])
+
+    ax3.set_ylabel("tangent (rad)")
     ax3.plot(*slope.get_plot_points(), '-')
-    #ax3.plot(*slope.get_plot_key_points(), 'o')
-    ax4.plot(*deflection.get_plot_points(), '-')
-    #ax4.plot(*deflection.get_plot_key_points(), 'o')
+    #ax3.plot(*slope.get_keypoints(), 'o')
+
+    ax4.set_ylabel("deflection (mm)")
+    ax4.plot(*delta.get_plot_points(), '-')
+    #ax4.plot(*delta.get_keypoints(), 'o')
+    maxdelta = delta.get_optim()[0]
+    print("Max deflection", maxdelta)
+    ax4.plot(maxdelta[0], maxdelta[1], 'o')
+
     plt.show()
 
 
@@ -133,7 +144,7 @@ if __name__ == "__main__":
     solve_beam(
         0, length,
         50, length-50,
-        [[j+100, -train_weight/6] for j in train_joints],
+        [[j-100, -train_weight/6] for j in train_joints],
         [((0, length), -board_mass/length)],
         EI
     )

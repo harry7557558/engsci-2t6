@@ -88,8 +88,8 @@ class PiecewisePolynomial():
                 res.append(x.real)
         return sorted(res)
 
-    def get_plot_key_points(self):
-        """get key points for plotting, including endpoints and optimums"""
+    def get_keypoints(self):
+        """endpoints + optimum"""
         xs, ys = [], []
         for i in range(len(self)):
             x1, x2 = self.keypoints[i], self.keypoints[i+1]
@@ -101,6 +101,14 @@ class PiecewisePolynomial():
             xs = np.concatenate((xs, x))
             ys = np.concatenate((ys, y))
         return xs, ys
+
+    def get_optim(self, absolute=False):
+        xs, ys = self.get_keypoints()
+        if absolute:
+            ys = np.abs(ys)
+        maxs = (xs[np.argmax(ys)], np.amax(ys))
+        mins = (xs[np.argmin(ys)], np.amin(ys))
+        return mins, maxs
 
     # arithmic
 
