@@ -39,6 +39,9 @@ class PiecewisePolynomial():
                 return self._eval_piece(self.pieces[i], x)
         return None
 
+    def evals(self, xs, leq=True):
+        return np.array([self.eval(x, leq) for x in xs])
+
     def get_plot_points(self, num_splits = 1000):
         """get a list of keypoints for plotting"""
         delta = (self.keypoints[-1] - self.keypoints[0]) / num_splits
@@ -103,14 +106,17 @@ class PiecewisePolynomial():
         return xs, ys
 
     def get_optim(self, absolute=False):
-        xs, ys = self.get_keypoints()
+        xs, ys0 = self.get_keypoints()
+        ys = np.abs(ys0) if absolute else ys0
+        maxi, mini = np.argmax(ys), np.argmin(ys)
+        maxy, miny = ys[maxi], ys[mini]
+        maxs = (np.mean(xs[np.where(abs(ys-np.full(len(ys),maxy))<1e-6)]), maxy)
+        mins = (np.mean(xs[np.where(abs(ys-np.full(len(ys),miny))<1e-6)]), miny)
         if absolute:
-            ys = np.abs(ys)
-        maxs = (xs[np.argmax(ys)], np.amax(ys))
-        mins = (xs[np.argmin(ys)], np.amin(ys))
+            return (maxs[0], ys0[maxi])
         return mins, maxs
 
-    # arithmic
+    # arithmic - not using operator overload to keep it clear
 
     def mul(self, c) -> 'PiecewisePolynomial':
         """multiply by a constant"""
@@ -132,7 +138,40 @@ class PiecewisePolynomial():
         return res
 
     def sub(self, piece) -> 'PiecewisePolynomial':
+        """subtract by a smooth polynomial"""
         poly = PiecewisePolynomial(self.keypoints, self.pieces)
         for i in range(len(poly.pieces)):
             poly.pieces[i] = self._sub_piece(poly.pieces[i], piece)
         return poly
+
+    @staticmethod
+    def _mul_piece(p, q):
+        r = [0]*(len(p)+len(q)-1)
+        for kp in range(len(p)):
+            for kq in range(len(q)):
+                r[kp+kq] += p[kp]*q[kq]
+        return r
+
+    def polymul(this, that) -> 'PiecewisePolynomial':
+        """multiply two piecewise polynomials"""
+        keypoints, pieces = [], []
+        xthis_map, xthat_map = {}, {}
+        for i in range(len(this)+1):
+            x = this.keypoints[i]
+            xthis_map[x] = [1, 0] if i == len(this) else this.pieces[i]
+            keypoints.append(x)
+        for i in range(len(that)+1):
+            x = that.keypoints[i]
+            xthat_map[x] = [1, 0] if i == len(that) else that.pieces[i]
+            keypoints.append(x)
+        keypoints = sorted(set(keypoints))
+        pieces = []
+        piece_this, piece_that = [1, 0], [1, 0]
+        for i in range(len(keypoints)-1):
+            x = keypoints[i]
+            if x in xthis_map:
+                piece_this = xthis_map[x]
+            if x in xthat_map:
+                piece_that = xthat_map[x]
+            pieces.append(this._mul_piece(piece_this, piece_that))
+        return PiecewisePolynomial(keypoints, pieces)

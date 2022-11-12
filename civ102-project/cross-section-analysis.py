@@ -2,22 +2,22 @@ import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
 
+from PiecewisePolynomial import PiecewisePolynomial
+
 # matboard properties
-# length: mm; weight: N
+# length: mm; weight: N; stress: MPa
 LINDEN_M = 1.27  # thickness of the matboard
 SIGMA_T = 30.  # tensile strength of the matboard
 SIGMA_C = 6.  # compressive strength of the matboard
 SHEAR_M = 4.  # shear strength of the matboard
 MAX_PERI = 800.  # maximum allowed perimeter
 E = 4000.  # Young's modulus of the matboard
-LINDEN_C = 0.5  # thickness of contact cement, mass ratio to matboard
+LINDEN_C = 0.1  # thickness of contact cement, assume cement has the same density as matboard
 SHAER_C = 2.  # shear strength of contact cement
-
-LINDEN_M = 2.5
 
 
 def calc_max_bending_moment(parts, yc, I):
-    """
+    """Maximum allowed bending moment
         @parts: same as @parts in `analyze_cross_section`
         @yc: centroidal axis
         @I: second moment of area calculated at @yc
@@ -33,6 +33,65 @@ def calc_max_bending_moment(parts, yc, I):
                 bml = SIGMA_T * I / -y
             max_bm = min(max_bm, bml)
     return max_bm
+
+
+def calc_shear_factor(parts, yc, I):
+    """Maximum allowed shear force
+            same parameters as `calc_max_bending_moment()`
+            neglect glue
+        Calculates Q(y) = -∫ydA as a PiecewisePolynomial;
+        Calculates 1/b(y) as a PiecewisePolynomial;
+        Returns τ(y)/V = Q(y)/(I*b(y))
+    """
+    # keypoints
+    key_ys = []  # (y, b(y) delta)
+    for part in parts:
+        for i in range(len(part)-1):
+            (x1, y1), (x2, y2) = part[i], part[i+1]
+            dA = LINDEN_M * np.hypot(x2-x1, y2-y1)
+            if abs(y2-y1) < LINDEN_M:
+                ym = 0.5*(y1+y2)
+                y1, y2 = ym-0.5*LINDEN_M, ym+0.5*LINDEN_M
+            dy = abs(y2-y1)
+            key_ys.append((min(y1, y2), dA/dy))
+            key_ys.append((max(y1, y2), -dA/dy))
+    key_ys.sort(key=lambda x: x[0])
+    key_ys1 = []
+    for (y, b) in key_ys:
+        if len(key_ys1) > 0 and y-key_ys1[-1][0] < 1e-8:
+            key_ys1[-1][1] += b
+            continue
+        key_ys1.append([y, b])
+    key_ys = key_ys1
+    
+    # get b = dA/dy
+    b = 0
+    y_prev = key_ys[0][0]
+    ys, bs = [], []
+    for (y, db) in key_ys:
+        # integrate
+        b += db
+        y_prev = y
+        # add piece
+        ys.append(y)
+        bs.append(b)
+    while abs(bs[0]) < 1e-6:  # happens with bad optimization
+        ys, bs = ys[1:], bs[1:]
+
+    # get ydA and 1/b
+    dAdy_pieces, inv_b_pieces = [], []
+    for (y, b) in zip(ys, bs):
+        if y != ys[-1]:
+            dAdy_pieces.append([b, 0.0])
+            inv_b_pieces.append([1/b, 0.0])
+    dAdy = PiecewisePolynomial(ys, dAdy_pieces)
+    ydAdy = dAdy.polymul(PiecewisePolynomial([ys[0], ys[-1]], [[-yc, 1]]))
+    Q = ydAdy.integrate().mul(-1)
+    inv_b = PiecewisePolynomial(ys, inv_b_pieces)
+    Q_Ib = Q.polymul(inv_b).mul(1/I)
+
+    #return Q_Ib.mul(1/SHEAR_M)
+    return Q_Ib.mul(1/SHAER_C)
 
 
 def analyze_cross_section(parts, glues, plot=False):
@@ -71,22 +130,36 @@ def analyze_cross_section(parts, glues, plot=False):
     I = sy2A - sA*yc**2  # second moment of area
     assert I > 0  # or there is a bug
 
+    # maximum allowed bending moment and shear force
+    max_bm = calc_max_bending_moment(parts, yc, I)
+    sff = calc_shear_factor(parts, yc, I)
+    max_sf = 1.0 / sff.eval(yc)
+
     if plot:
-        plt.clf()
+        print("I:", I, "mm⁴")
+        print("Max BM:", 0.001*max_bm, "N⋅m")
+        print("Max shear:", max_sf, "N")
+        fig, (ax1, ax2) = plt.subplots(
+            1, 2, gridspec_kw={'width_ratios': [3, 1]})
         for part in parts:
             part = np.array(part)
-            plt.plot(part[:, 0], part[:, 1], '-')
+            ax1.plot(part[:, 0], part[:, 1], '-')
         for glue in glues:
             glue = np.array(glue)
-            plt.plot(glue[:, 0], glue[:, 1], 'k--')
-        plt.plot(plt.xlim(), [yc, yc], '--')
+            ax1.plot(glue[:, 0], glue[:, 1], 'k--')
+        ax1.plot(ax1.get_xlim(), [yc, yc], '--')
+        ax1.set_aspect('equal')
+        ax1.set_xlabel("(mm)")
+        ax1.set_ylabel("(mm)")
+        ys, sffs = sff.get_plot_points()
+        ax2.plot(sffs, ys)
+        ax2.plot(1.0/max_sf, yc, 'o')
+        ax2.set_xlabel("maxV⁻¹ (N⁻¹)")
         plt.show()
 
     if peri_m > MAX_PERI:
         return -1.0  # impossible
 
-    max_bm = calc_max_bending_moment(parts, yc, I)
-    #print("Maximum bending moment:", 0.001*max_bm, "Nm")
     return max_bm
 
 
@@ -104,8 +177,11 @@ def analyze_trapezoid(wt, wb, h, glue_loc, plot=False):
         return -1  # must be a valid geometry
     if wt < 75:
         return -1  # must hold the train
-    if wb < 50 or wt > 2 * wb:
-        return -1  # must stand on the platform
+    if True:  # not analyzing a "triangle"
+        if wb < 50 or wt > 2 * wb:
+            return -1  # must stand on the platform
+        if h > 2 * wb:
+            return -1  # must not be too "thin"
 
     # analyze
     if glue_loc == 'bottom':
