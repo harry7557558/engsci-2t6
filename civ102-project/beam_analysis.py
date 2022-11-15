@@ -168,7 +168,7 @@ def get_responses(train_x, plot=False):
     )
 
 
-def plot_max_responses():
+def plot_max_responses(plot=True):
     
     train_x1 = -960
     train_x2 = 1260
@@ -184,6 +184,9 @@ def plot_max_responses():
             msfv = np.maximum(msfv, sfv)
             mbmv = np.maximum(mbmv, bmv)
             mdfv = np.minimum(mdfv, dfv)
+
+    if not plot:
+        return np.amax(mrv), (sfx, msfv), (bmx, mbmv)
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 8))
 

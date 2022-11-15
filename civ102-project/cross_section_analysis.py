@@ -14,7 +14,7 @@ MU = 0.2  # Poisson's ratio of the matboard
 E = 4000.  # Young's modulus of the matboard
 MAX_PERI = 800.  # maximum allowed perimeter
 LINDEN_C = 0.1  # thickness of contact cement, assume cement has the same density as matboard
-SHAER_C = 4.  # shear strength of contact cement
+SHEAR_C = 2.  # shear strength of contact cement
 
 # calculated from beam analysis
 REACTION_MAX = 273
@@ -96,8 +96,8 @@ def calc_shear_factor(parts, yc, I):
     inv_b = PiecewisePolynomial(ys, inv_b_pieces)
     Q_Ib = Q.polymul(inv_b).mul(1/I)
 
-    #return Q_Ib.mul(1/SHEAR_M)
-    return Q_Ib.mul(1/SHAER_C)
+    return Q_Ib.mul(1/SHEAR_M)
+    #return Q_Ib.mul(1/SHEAR_C)
 
 
 def calc_buckling_moment(parts, yc, I):
@@ -144,19 +144,8 @@ def calc_buckling_moment(parts, yc, I):
     return max_bm
 
 
-def analyze_cross_section(parts, glues, plot=False):
-    """
-        @parts: list of continuous point lists,
-                first point equals last point for a closed polygon
-        @glues: list of glue joints, each has a list of two points
-
-    Currently returns the maximum allowed bending moment
-    """
-    # represent points using NumPy arrays
-    parts = [[np.array(p) for p in part] for part in parts]
-    glues = [[np.array(p) for p in glue] for glue in glues]
-
-    # calculate geometric properties
+def calc_geometry(parts, glues):
+    """Returns (perimeter, yc, I)"""
     peri_m, peri_c = 0.0, 0.0
     sA, syA, sy2A = 0.0, 0.0, 0.0
     for part in parts:
@@ -179,6 +168,23 @@ def analyze_cross_section(parts, glues, plot=False):
     yc = syA / sA  # centroidal axis
     I = sy2A - sA*yc**2  # second moment of area
     assert I > 0  # or there is a bug
+    return (peri_m, yc, I)
+
+
+def analyze_cross_section(parts, glues, plot=False, return_full=False):
+    """
+        @parts: list of continuous point lists,
+                first point equals last point for a closed polygon
+        @glues: list of glue joints, each has a list of two points
+
+    Currently returns the maximum allowed bending moment
+    """
+    # represent points using NumPy arrays
+    parts = [[np.array(p) for p in part] for part in parts]
+    glues = [[np.array(p) for p in glue] for glue in glues]
+
+    # calculate geometric properties
+    peri_m, yc, I = calc_geometry(parts, glues)
 
     # maximum allowed bending moment and shear force
     max_bm = calc_max_bending_moment(parts, yc, I)
@@ -214,5 +220,7 @@ def analyze_cross_section(parts, glues, plot=False):
         ax2.set_xlabel("maxV⁻¹ (N⁻¹)")
         plt.show()
 
+    if return_full:
+        return (fos_bm, fos_bm_b, fos_shear)
     penalty = -1e6*max(peri_m/MAX_PERI-1, 0)**2
     return min(fos_bm, fos_bm_b, fos_shear)+penalty
