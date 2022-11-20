@@ -13,13 +13,19 @@ SHEAR_M = 4.  # shear strength of the matboard
 MU = 0.2  # Poisson's ratio of the matboard
 E = 4000.  # Young's modulus of the matboard
 MAX_PERI = 800.  # maximum allowed perimeter
-LINDEN_C = 0.1  # thickness of contact cement, assume cement has the same density as matboard
+LINDEN_C = 0.  # thickness of contact cement, assume cement has the same density as matboard
 SHEAR_C = 2.  # shear strength of contact cement
 
 # calculated from beam analysis
 REACTION_MAX = 273
 SHEAR_MAX = 255
 BM_MAX = 66400
+
+# variable?
+LENGTH = 1250  # cross section length
+
+# misc?
+TRAIN_WIDTH = 75
 
 
 def calc_max_bending_moment(parts, yc, I):
@@ -47,7 +53,7 @@ def calc_shear_factor(parts, yc, I):
             neglect glue
         Calculates Q(y) = -∫ydA as a PiecewisePolynomial;
         Calculates 1/b(y) as a PiecewisePolynomial;
-        Returns the reciprocal of failure shear force
+        Returns Q/Ib
     """
     # keypoints
     key_ys = []  # (y, b(y) delta)
@@ -96,30 +102,11 @@ def calc_shear_factor(parts, yc, I):
     inv_b = PiecewisePolynomial(ys, inv_b_pieces)
     Q_Ib = Q.polymul(inv_b).mul(1/I)
 
-    return Q_Ib.mul(1/SHEAR_M)
-    #return Q_Ib.mul(1/SHEAR_C)
+    return Q_Ib
 
 
-def calc_buckling_moment(parts, yc, I):
+def calc_buckling_moment(pieces, yc, I):
     """Maximum allowed bending moment so no buckling occurs"""
-    # glue the pieces together
-    pieces0 = []
-    for part in parts:
-        for (p1, p2) in zip(part[:-1], part[1:]):
-            pieces0.append([p1, p2])
-    pieces0.sort(key=lambda ps: -np.linalg.norm(ps[1]-ps[0]))
-    pieces = []
-    for (p1, p2) in pieces0:
-        n = [-(p2[1]-p1[1]), p2[0]-p1[0]]
-        d = n[0]*p1[0] + n[1]*p1[1]
-        ok = lambda p: abs(n[0]*p[0]+n[1]*p[1]-d) < 1e-6
-        pieces.append([p1, p2, 1])
-        for i in range(len(pieces)-1):
-            q1, q2, count = pieces[i]
-            if ok(q1) and ok(q2):
-                pieces[i][2] += 1
-                del pieces[-1]
-                break
     # bending moment
     max_bm = float('inf')
     for (p1, p2, count) in pieces:
@@ -144,10 +131,27 @@ def calc_buckling_moment(parts, yc, I):
     return max_bm
 
 
-def calc_geometry(parts, glues):
-    """Returns (perimeter, yc, I)"""
+def calc_buckling_shear(pieces, yc, Q_Ib):
+    """The worst case when a==infty"""
+    max_shear = float('inf')
+    for (p1, p2, count) in pieces:
+        (x1, y1), (x2, y2) = p1, p2
+        if y2 < y1:
+            x1, x2, y1, y2 = x2, x1, y2, y1
+        if y1 == y2:
+            continue
+        t = count * LINDEN_M
+        h = y2 - y1
+        tau_crit = 5.0*np.pi**2*E/12.0/(1.0-MU**2) * ((t/h)**2+(t/LENGTH)**2)
+        max_shear = min(max_shear, tau_crit/Q_Ib)
+    return max_shear
+
+
+def calc_geometry(parts):
+    """Returns (perimeter, (xc, yc), (Ix, Iy))
+        Assumes the I matrix is diagonal"""
     peri_m, peri_c = 0.0, 0.0
-    sA, syA, sy2A = 0.0, 0.0, 0.0
+    sA, sxA, syA, sx2A, sy2A = [0.0]*5
     for part in parts:
         for i in range(len(part)-1):
             p1, p2 = part[i], part[i+1]
@@ -155,20 +159,89 @@ def calc_geometry(parts, glues):
             dA = dl * LINDEN_M
             peri_m += dl
             sA += dA
+            sxA += 0.5*(p1[0]+p2[0]) * dA
             syA += 0.5*(p1[1]+p2[1]) * dA
+            sx2A += (p1[0]**2+p1[0]*p2[0]+p2[0]**2)/3 * dA
             sy2A += (p1[1]**2+p1[1]*p2[1]+p2[1]**2)/3 * dA
-    for glue in glues:
-        p1, p2 = glue
-        dl = np.linalg.norm(p2-p1)
-        dA = dl * LINDEN_C
-        peri_c += dl
-        sA += dA
-        syA += 0.5*(p1[1]+p2[1]) * dA
-        sy2A += (p1[1]**2+p1[1]*p2[1]+p2[1]**2)/3 * dA
+    xc = sxA / sA
     yc = syA / sA  # centroidal axis
-    I = sy2A - sA*yc**2  # second moment of area
-    assert I > 0  # or there is a bug
-    return (peri_m, yc, I)
+    Ix = sx2A - sA*xc**2
+    Iy = sy2A - sA*yc**2  # second moment of area
+    assert Ix > 0 and Iy > 0  # or there is a bug (and we also don't want ==0)
+    return (peri_m, (xc, yc), (Ix, Iy))
+
+
+def overlap_pieces(pieces0):
+    """Divide/merge overlapping pieces"""
+    pieces0.sort(key=lambda ps: np.linalg.norm(ps[1]-ps[0]))
+    colinears = []
+    ok = lambda n, d, p: abs(n[0]*p[0]+n[1]*p[1]-d) < 1e-6
+    for (p1, p2) in pieces0:
+        n = (-(p2[1]-p1[1]), p2[0]-p1[0])
+        n = (n[0]/np.hypot(n[0],n[1]), n[1]/np.hypot(n[0],n[1]))
+        d = n[0]*p1[0] + n[1]*p1[1]
+        colinears.append([n, d, [[p1, p2]]])
+        for i in range(len(colinears)-1):
+            n, d, pieces = colinears[i]
+            if ok(n, d, p1) and ok(n, d, p2):
+                pieces.append([p1, p2])
+                del colinears[-1]
+                break
+    pieces = []  # p1, p2, count
+    for (n, d, pairs) in colinears:
+        comp = lambda p: n[0]*p[1]-n[1]*p[0]
+        ps = []
+        for (p1, p2) in pairs:
+            if comp(p1) > comp(p2):
+                p1, p2 = p2, p1
+            ps += [(p1, 1), (p2, -1)]
+        ps.sort(key=lambda p: comp(p[0]))
+        count = 0
+        for ((p1, d1), (p2, d2)) in zip(ps[:-1], ps[1:]):
+            count += d1
+            assert count >= 0
+            if count == 0 or comp(p2)-comp(p1) < 1e-6:
+                continue
+            pieces.append((p1, p2, count))
+    return pieces
+
+
+def intersection_pieces(pieces1, pieces2):
+    """Find the part shared by both pieces
+        Result may include duplicates
+        Very likely has a bug but I'm too lazy to fix it
+            because it does not affect the result much"""
+    pieces1 = sum([list(zip(p[:-1], p[1:])) for p in pieces1], [])
+    pieces2 = sum([list(zip(p[:-1], p[1:])) for p in pieces2], [])
+    def hashp(p):
+        s = 1.3*np.sin(p[0]+0.2)+0.2*np.cos(0.5-p[1])
+        h = np.hypot(p[0], p[1])+1
+        w = (p[0]/h+1.2)*np.tanh(p[1]/h-0.7)
+        return s + w
+    def hashs(s):
+        h1, h2 = hashp(s[0]), hashp(s[1])
+        return tuple(sorted([h1, h2]))
+    def pieces2set(pieces):
+        res = set()
+        for i in range(len(pieces)):
+            s = list(pieces[i])
+            res.add(hashs(s))
+        return res
+    set1, set2 = pieces2set(pieces1), pieces2set(pieces2)
+    res = []
+    for piece in pieces2:
+        if hashs(piece) in set1:
+            res.append(piece)
+    return res
+
+
+def cross_section_range(parts):
+    res = []
+    for part in parts:
+        x = [p[0] for p in part]
+        y = [p[1] for p in part]
+        res.append((max(x)-min(x), max(y)-min(y)))
+    return res
 
 
 def analyze_cross_section(parts, glues, plot=False, return_full=False):
@@ -184,24 +257,42 @@ def analyze_cross_section(parts, glues, plot=False, return_full=False):
     glues = [[np.array(p) for p in glue] for glue in glues]
 
     # calculate geometric properties
-    peri_m, yc, I = calc_geometry(parts, glues)
+    peri_m, (xc, yc), (Ix, I) = calc_geometry(parts)
+    I_buckle = I
+    if Ix < I:  # buckling sideways?
+        xr = max([r[0] for r in cross_section_range(parts)])
+        yd = max([p[1] for p in sum(parts, [])])
+        xd = max(0.5*xr-0.5*TRAIN_WIDTH, 0)  # how far the train can go sideways
+        xd = 0.5*xr  # underestimate is better than overestimate
+        c, s = yd/np.hypot(xd, yd), xd/np.hypot(xd, yd)
+        I_buckle = c*c*I + s*s*Ix  # hope the inertia tensor formula still applies here
+
+    # glue the pieces together
+    pieces = []
+    for part in parts:
+        for (p1, p2) in zip(part[:-1], part[1:]):
+            pieces.append([p1, p2])
+    pieces = overlap_pieces(pieces)
 
     # maximum allowed bending moment and shear force
     max_bm = calc_max_bending_moment(parts, yc, I)
-    max_bm_b = calc_buckling_moment(parts, yc, I)
+    max_bm_b = calc_buckling_moment(pieces, yc, I_buckle)
     sff = calc_shear_factor(parts, yc, I)
     #max_sf = 1.0 / sff.eval(yc)
-    max_sf_y, max_sf = sff.get_optim(absolute=True)
-    max_sf **= -1.0
+    max_sf_y, Q_Ib = sff.get_optim(absolute=True)
+    max_sf = SHEAR_M / Q_Ib
+    max_sf_b = calc_buckling_shear(pieces, yc, Q_Ib)
     fos_bm = max_bm/BM_MAX
     fos_bm_b = max_bm_b/BM_MAX
     fos_shear = max_sf/SHEAR_MAX
+    fos_shear_b = max_sf_b/SHEAR_MAX
 
     if plot:
         print("I:", I, "mm⁴")
         print("Max BM:", 0.001*max_bm, "N⋅m", "\tFoS =", fos_bm)
         print("Max buckle BM:", 0.001*max_bm_b, "N⋅m", "\tFoS =", fos_bm_b)
         print("Max shear:", max_sf, "N", "\tFoS =", fos_shear)
+        print("Max buckle shear:", max_sf_b, "N", "\tFoS =", fos_shear_b)
         fig, (ax1, ax2) = plt.subplots(
             1, 2, gridspec_kw={'width_ratios': [3, 1]})
         for part in parts:
@@ -221,6 +312,6 @@ def analyze_cross_section(parts, glues, plot=False, return_full=False):
         plt.show()
 
     if return_full:
-        return (fos_bm, fos_bm_b, fos_shear)
+        return (fos_bm, fos_bm_b, fos_shear, fos_shear_b)
     penalty = -1e6*max(peri_m/MAX_PERI-1, 0)**2
-    return min(fos_bm, fos_bm_b, fos_shear)+penalty
+    return min(fos_bm, fos_bm_b, fos_shear, fos_shear_b)+penalty

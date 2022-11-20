@@ -107,7 +107,7 @@ def solve_beam(
     if plot:
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(7.5, 7.5))
         ax4.set_xlabel("position (mm)")
-        
+
         ax1.set_ylabel("shear (N)")
         ax1.plot(*sfd.get_plot_points(), '-')
         #ax1.plot(*sfd.get_keypoints(), 'o')
@@ -150,7 +150,7 @@ def get_responses(train_x, plot=False):
     # length unit: mm
     # weight unit: N
 
-    length = 1260
+    length = 1250
     board_mass = 0.75*9.81
 
     train_weight = 400
@@ -169,12 +169,13 @@ def get_responses(train_x, plot=False):
 
 
 def plot_max_responses(plot=True):
-    
-    train_x1 = -960
-    train_x2 = 1260
 
+    # generate a list of possible train left positions
+    train_x1 = -960
+    train_x2 = 1250
     xs = np.array(range(train_x1, train_x2+1, 10), dtype=np.float64)
 
+    # find the maximum reaction across all positions
     for x in xs:
         (rx, rv), (sfx, sfv), (bmx, bmv), (dfx, dfv) = get_responses(x)
         if x == xs[0]:
@@ -211,5 +212,5 @@ def plot_max_responses(plot=True):
 
 if __name__ == "__main__":
 
-    #get_responses(-200, True)
+    #get_responses(167, True)
     plot_max_responses()

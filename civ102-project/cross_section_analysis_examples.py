@@ -1,3 +1,8 @@
+"""DEPRECATED: This code is no longer compactible
+    after changes on `cross_section_analysis.py`.
+"""
+
+
 from cross_section_analysis import *
 
 
