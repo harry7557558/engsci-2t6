@@ -174,7 +174,7 @@ def calc_geometry(parts):
 def overlap_pieces(pieces0):
     """Divide/merge overlapping pieces"""
     pieces0.sort(key=lambda ps: np.linalg.norm(ps[1]-ps[0]))
-    colinears = []
+    colinears = []  # n, d, pieces
     ok = lambda n, d, p: abs(n[0]*p[0]+n[1]*p[1]-d) < 1e-6
     for (p1, p2) in pieces0:
         n = (-(p2[1]-p1[1]), p2[0]-p1[0])
@@ -207,32 +207,49 @@ def overlap_pieces(pieces0):
 
 
 def intersection_pieces(pieces1, pieces2):
-    """Find the part shared by both pieces
-        Result may include duplicates
-        Very likely has a bug but I'm too lazy to fix it
-            because it does not affect the result much"""
+    """Find the parts shared by both pieces"""
     pieces1 = sum([list(zip(p[:-1], p[1:])) for p in pieces1], [])
+    pieces1.sort(key=lambda ps: np.linalg.norm(ps[1]-ps[0]))
     pieces2 = sum([list(zip(p[:-1], p[1:])) for p in pieces2], [])
-    def hashp(p):
-        s = 1.3*np.sin(p[0]+0.2)+0.2*np.cos(0.5-p[1])
-        h = np.hypot(p[0], p[1])+1
-        w = (p[0]/h+1.2)*np.tanh(p[1]/h-0.7)
-        return s + w
-    def hashs(s):
-        h1, h2 = hashp(s[0]), hashp(s[1])
-        return tuple(sorted([h1, h2]))
-    def pieces2set(pieces):
-        res = set()
-        for i in range(len(pieces)):
-            s = list(pieces[i])
-            res.add(hashs(s))
-        return res
-    set1, set2 = pieces2set(pieces1), pieces2set(pieces2)
-    res = []
-    for piece in pieces2:
-        if hashs(piece) in set1:
-            res.append(piece)
-    return res
+    pieces2.sort(key=lambda ps: np.linalg.norm(ps[1]-ps[0]))
+    # get colinear lines
+    colinears = []  # n, d, pieces
+    ok = lambda n, d, p: abs(n[0]*p[0]+n[1]*p[1]-d) < 1e-6
+    def add_pieces(pieces, pid):
+        for (p1, p2) in pieces:
+            n = (-(p2[1]-p1[1]), p2[0]-p1[0])
+            n = (n[0]/np.hypot(n[0],n[1]), n[1]/np.hypot(n[0],n[1]))
+            d = n[0]*p1[0] + n[1]*p1[1]
+            colinears.append([n, d, [[p1, p2, pid]]])
+            for i in range(len(colinears)-1):
+                n, d, pieces = colinears[i]
+                if ok(n, d, p1) and ok(n, d, p2):
+                    pieces.append([p1, p2, pid])
+                    del colinears[-1]
+                    break
+    add_pieces(pieces1, 0)
+    add_pieces(pieces2, 1)
+    # check each straight line
+    pieces = []  # p1, p2
+    for (n, d, pairs) in colinears:
+        comp = lambda p: n[0]*p[1]-n[1]*p[0]
+        ps = []  # p, increment, pid
+        for (p1, p2, pid) in pairs:
+            if comp(p1) > comp(p2):
+                p1, p2 = p2, p1
+            ps += [(p1, 1, pid), (p2, -1, pid)]
+        ps.sort(key=lambda p: (comp(p[0]), p[2]))
+        count = [0, 0]
+        for ((p1, d1, pid1), (p2, d2, pid2)) in zip(ps[:-1], ps[1:]):
+            count[pid1] += d1
+            assert min(count) >= 0
+            #assert comp(p2) >= comp(p1)
+            if comp(p2)-comp(p1) < 1e-6:
+                continue
+            if min(count) > 0:
+                pieces.append((p1, p2))
+        assert count == [0, 1] or count == [1, 0]
+    return pieces
 
 
 def cross_section_range(parts):

@@ -29,7 +29,7 @@ def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes, d1):
         return None
     if cl > 2*c:  # must not longer than bridge
         return None
-    if 2*sl+cl < 2*c+50*2:  # frame must be longer than bridge, with glue joints
+    if 2*sl+cl < 2*c+20*2:  # frame must be longer than bridge, with glue joints
         return None
     if wt < wb:  # force bottom large trapezoid
         return None
@@ -104,10 +104,10 @@ if __name__ == "__main__":
 
     if GLUE_EDGE:
         initial_params = [91, 30, 75, 180, 1000, 550, 20, 20, 300]
-        initial_params = [92.70233971611614, 30.57634152078104, 76.5843209011683, 186.6558974498439, 1012.005537378484, 518.1478113346183, 23.544923632735916, 22.805179996140616, 395.51768346505884]
+        initial_params = [91.69915039217975, 30.570958551361343, 77.12400342945995, 183.90514117225823, 1006.2347522196324, 569.591070662502, 28.005635792805723, 22.477612899353225, 406.5955748039444]
     else:
         initial_params = [101, 40, 80, 400, 600, 600, 20, 20, 300]
-        initial_params = [102.684522085972, 53.71937179728894, 82.55439750082016, 381.2256149789538, 611.4630960762545, 560.6199741168588, 19.65846215217679, 17.025439068871144, 297.20140203822444]
+        initial_params = [100.04684686639436, 51.27584809991874, 84.52556651997077, 308.35508357240985, 772.1308902987869, 527.143956698997, 16.832391579492267, 13.852157193054817, 228.85815976100542]
 
     bridge = ba.Bridge(
         calc_cross_section, calc_diaphrams,

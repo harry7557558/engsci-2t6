@@ -88,8 +88,8 @@ def trapezoid_rect_support(wt, wb, h):
 def trapezoid_rect_support_diaphram(wt, wb, h):
     assert wt > wb
     parts = [
-        [(0.5*wt, h), (0.5*wt, 0), (0.5*wb, h), (0.5*wt, h)],
-        [(-0.5*wt, h), (-0.5*wt, 0), (-0.5*wb, h), (-0.5*wt, h)]
+        [(0.5*wt, h), (0.5*wt, 0), (0.5*wb, 0), (0.5*wt, h)],
+        [(-0.5*wt, h), (-0.5*wt, 0), (-0.5*wb, 0), (-0.5*wt, h)]
     ]
     return parts, []
     

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 import beam_analysis
 import cross_section_analysis as csa
@@ -60,7 +61,7 @@ def get_max_bend(x0, x1):
 
 class BridgeCrossSection:
 
-    def __init__(self, label: str, parts, glues, x0, x1):
+    def __init__(self, label, parts, glues, x0, x1):
         assert x0 < x1
         self.solved = False
         self.label = label
@@ -144,20 +145,26 @@ class Bridge:
         self.params = initial_params[:]
 
     def calc_glues(self, cross_sections):
+        """Calculate glue joints 
+            set glues of the parameter to empty
+            returns list[BridgeCrossSection] with only glues
+            label is True if it is a concern of flexural shear failure"""
         for cs in cross_sections:
             cs.glues = []
         # might include duplicate glue joints
         # underestimate is better than overestimate
         res = []
         for j in range(len(cross_sections)):
+            cs2 = cross_sections[j]
             for i in range(j):
                 cs1, cs2 = cross_sections[i], cross_sections[j]
-                if cs1.x0 > cs2.x0 or (cs1.x0 == cs2.x0 and cs1.x1 > cs2.x1):
+                if (cs1.x0, cs1.x1) > (cs2.x0, cs2.x1):
                     cs1, cs2 = cs2, cs1
                 if cs2.x0 >= cs1.x1:
                     continue
                 glues = csa.intersection_pieces(cs1.parts, cs2.parts)
-                cs = BridgeCrossSection('', [], glues, cs2.x0, cs1.x1)
+                cs = BridgeCrossSection(cs1.x1 <= cs2.x1, [], glues,
+                                        cs2.x0, min(cs1.x1, cs2.x1))
                 res.append(cs)
         return res
 
@@ -239,7 +246,10 @@ class Bridge:
             fos_flexshear = float('inf')
             peri, (xc, yc), (Ix, I) = csa.calc_geometry(parts)
             for glue in glues:
-                if glue.x0 >= x1 or glue.x1 <= x0:
+                if glue.label == False:
+                    continue
+                if not glue.x0 <= x0 < x1 <= glue.x1:
+                    assert x0 >= glue.x1 or x1 <= glue.x0
                     continue
                 for (p1, p2) in glue.glues:
                     maxy = max(abs(p1[1]-yc), abs(p2[1]-yc))
@@ -257,7 +267,7 @@ class Bridge:
                 fos_bend_buckle /= 3
                 fos_shear /= 1.5
                 fos_shear_buckle /= 3
-                fos_flexshear /= 5
+                fos_flexshear /= 40  # don't think I calculated this one correctly
             min_fos = min(min_fos,
                           fos_bend, fos_bend_buckle,
                           fos_shear, fos_shear_buckle,
@@ -273,17 +283,18 @@ class Bridge:
                 c_bend_buckle = fos_bend_buckle * csa.BM_MAX / bms
                 c_shear = fos_shear * csa.SHEAR_MAX / sfs
                 c_shear_buckle = fos_shear_buckle * csa.SHEAR_MAX / sfs
+                c_flexshear = fos_flexshear * csa.BM_MAX / bms
                 cs_x += xs.tolist()
                 cs_bend += c_bend.tolist()
                 cs_bend_buckle += c_bend_buckle.tolist()
                 cs_shear += c_shear.tolist()
                 cs_shear_buckle += c_shear_buckle.tolist()
-                cs_flexshear += (fos_flexshear*one).tolist()
+                cs_flexshear += c_flexshear.tolist()
 
         if plot:
             fig, (ax1, ax2) = plt.subplots(2, 1)
             one = np.float64(1)
-            ax1.plot(cs_x, one/cs_bend, label="bend fos⁻¹")
+            ax1.plot(cs_x, one/cs_bend, label="flexural fos⁻¹")
             ax1.plot(cs_x, one/cs_bend_buckle, label="bend buckle fos⁻¹")
             ax1.plot(cs_x, one/cs_shear, label="shear fos⁻¹")
             ax1.plot(cs_x, one/cs_shear_buckle, label="shear buckle fos⁻¹")
