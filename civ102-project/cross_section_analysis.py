@@ -22,7 +22,7 @@ SHEAR_MAX = 255
 BM_MAX = 66400
 
 # variable?
-LENGTH = 1250  # cross section length
+LENGTH = __import__('beam_analysis').LENGTH  # cross section length
 
 # misc?
 TRAIN_WIDTH = 75
@@ -261,17 +261,14 @@ def cross_section_range(parts):
     return res
 
 
-def analyze_cross_section(parts, glues, plot=False, return_full=False):
+def analyze_cross_section(parts_raw, parts, plot=False, return_full=False):
     """
         @parts: list of continuous point lists,
                 first point equals last point for a closed polygon
-        @glues: list of glue joints, each has a list of two points
-
-    Currently returns the maximum allowed bending moment
+        @parts_raw doesn't have offset, @parts has offset
     """
     # represent points using NumPy arrays
     parts = [[np.array(p) for p in part] for part in parts]
-    glues = [[np.array(p) for p in glue] for glue in glues]
 
     # calculate geometric properties
     peri_m, (xc, yc), (Ix, I) = calc_geometry(parts)
@@ -286,7 +283,7 @@ def analyze_cross_section(parts, glues, plot=False, return_full=False):
 
     # glue the pieces together
     pieces = []
-    for part in parts:
+    for part in parts_raw:
         for (p1, p2) in zip(part[:-1], part[1:]):
             pieces.append([p1, p2])
     pieces = overlap_pieces(pieces)
@@ -294,7 +291,7 @@ def analyze_cross_section(parts, glues, plot=False, return_full=False):
     # maximum allowed bending moment and shear force
     max_bm = calc_max_bending_moment(parts, yc, I)
     max_bm_b = calc_buckling_moment(pieces, yc, I_buckle)
-    sff = calc_shear_factor(parts, yc, I)
+    sff = calc_shear_factor(parts_raw, yc, I)
     #max_sf = 1.0 / sff.eval(yc)
     max_sf_y, Q_Ib = sff.get_optim(absolute=True)
     max_sf = SHEAR_M / Q_Ib
@@ -315,9 +312,6 @@ def analyze_cross_section(parts, glues, plot=False, return_full=False):
         for part in parts:
             part = np.array(part)
             ax1.plot(part[:, 0], part[:, 1], '-')
-        for glue in glues:
-            glue = np.array(glue)
-            ax1.plot(glue[:, 0], glue[:, 1], 'k--')
         ax1.plot(ax1.get_xlim(), [yc, yc], '--')
         ax1.set_aspect('equal')
         ax1.set_xlabel("(mm)")

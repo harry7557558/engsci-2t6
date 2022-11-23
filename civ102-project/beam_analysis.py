@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from PiecewisePolynomial import PiecewisePolynomial
 
 
+LENGTH = 1260.  # length of the beam
+
+
 def solve_beam(
         x1, x2,  # start/end of the beam
         p1, p2,  # supports
@@ -150,7 +153,6 @@ def get_responses(train_x, plot=False):
     # length unit: mm
     # weight unit: N
 
-    length = 1250
     board_mass = 0.75*9.81
 
     train_weight = 400
@@ -159,10 +161,10 @@ def get_responses(train_x, plot=False):
     EI = 4000 * 1e6
 
     return solve_beam(
-        0, length,
-        50, length-50,
+        0, LENGTH,
+        0.5*LENGTH-575, 0.5*LENGTH+575,
         [[j+train_x, -train_weight/6] for j in train_joints],
-        [((0, length), -board_mass/length)],
+        [((0, LENGTH), -board_mass/LENGTH)],
         EI,
         plot
     )
@@ -172,7 +174,7 @@ def plot_max_responses(plot=True):
 
     # generate a list of possible train left positions
     train_x1 = -960
-    train_x2 = 1250
+    train_x2 = int(LENGTH)
     xs = np.array(range(train_x1, train_x2+1, 10), dtype=np.float64)
 
     # find the maximum reaction across all positions

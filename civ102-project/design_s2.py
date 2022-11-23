@@ -2,22 +2,32 @@ import bridge_analysis as ba
 import cross_section_models as csm
 
 
+def mix(a, b, t):
+    return a + (b-a) * t
+
+
 # total 9 parameters:
 # @wt, @wb, @h
 # length of each side beam, @sl
 # length of the central beam @cl
 # strenghen middle edges @mel, @met, @mes, length, top width, side width
-# @d1 - location of diaphram or endpoint of wall, depending on the following variable
-ANTISHEAR = ['None', 'diaphram', 'strenghen'][1]  # don't change this
 
 # Trapezoid body: folded
 # Trapezoid top: folded, or glue the edges (10mm padding)
 GLUE_EDGE = True
-# Diaphrams: glue the edges
+# Diaphragms: glue the edges
+
+C = __import__('beam_analysis').LENGTH/2
+E11, E12, E21, E22 = 10, 30, 50, 70
+EC = 0.5*(E12+E21)
+D1 = mix(EC, 2*C-EC, 0.16)
+D2 = mix(EC, 2*C-EC, 0.38)
+
+# six diaphragms
+# two at the ends, four uniformly spaced
 
 
-def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes, d1):
-    c = 1250/2
+def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes):
     # geometry constraints
     if not min(wt, wb, h, cl, mel, met, mes) > 0:
         return None
@@ -25,20 +35,24 @@ def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes, d1):
         return None
     if h > 200:  # hard constraint
         return None
-    if mel > c or d1 > c:  # these can't be higher than half of the bridge length
+    if mel > C:  # these can't be higher than half of the bridge length
         return None
-    if cl > 2*c:  # must not longer than bridge
+    if cl > 2*C:  # must not longer than bridge
         return None
-    if 2*sl+cl < 2*c+20*2:  # frame must be longer than bridge, with glue joints
+    if 2*sl+cl < 2*C+20*2:  # frame must be longer than bridge, with glue joints
+        """Failure of glue joint due to tension
+            400N / 2MPa = 200mm²
+            200mm²/100mm = 2mm is theoretically enough
+            Intuitively it doesn't make sense so put 20mm.
+        """
         return None
     if wt < wb:  # force bottom large trapezoid
         return None
     if False:
         if (wt-wb)/2 > 75/2:  # must not fall when the train is at the edge
             return None
-    if d1 < 100:  # diaphrams must be in order
-        return None
     # beam cross sections
+    offset = 1.5
     if GLUE_EDGE:
         tm = csm.trapezoid_glue_edge_2(wt, wb, h)
         #ts = csm.trapezoid_glue_edge_1(wt, wb, h)
@@ -51,74 +65,71 @@ def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes, d1):
     tws = csm.trapezoid_wall_strenghen(wt, wb, h)
     res = [
         ba.BridgeCrossSection('side_beam_1', *ts, 0, sl),
-        ba.BridgeCrossSection('side_beam_2', *ts, 2*c-sl, 2*c),
-        ba.BridgeCrossSection('central_beam', *tm, c-0.5*cl, c+0.5*cl),
-        ba.BridgeCrossSection('mid_strenghen', *tes, c-0.5*mel, c+0.5*mel),
-        ba.BridgeCrossSection('support_1', *sp, 10, 70),
-        ba.BridgeCrossSection('support_2', *sp, 2*c-70, 2*c-10),
+        ba.BridgeCrossSection('side_beam_2', *ts, 2*C-sl, 2*C),
+        ba.BridgeCrossSection('central_beam', *tm, C-0.5*cl, C+0.5*cl, offset),
+        ba.BridgeCrossSection('mid_strenghen', *tes, C-0.5*mel, C+0.5*mel),
+        ba.BridgeCrossSection('support_1', *sp, E11, E22, -offset),
+        ba.BridgeCrossSection('support_2', *sp, 2*C-E22, 2*C-E11, -offset),
     ]
-    if ANTISHEAR[0] == 's':
-        res += [
-            ba.BridgeCrossSection('antishear_1', *tws, 60, d1),
-            ba.BridgeCrossSection('antishear_2', *tws, 2*c-d1, 2*c-60),
-        ]
+    """Buckling of flange
+        Failure stress 0.425π²E / 12(1-μ²) * (1.27mm/10mm)² = 23.5 MPa
+        Far higher than the board's compressive strength. Not a big issue.
+    """
     return res
 
 
-def calc_diaphrams(wt, wb, h, sl, cl, mel, met, mes, d1):
+def calc_diaphragms(wt, wb, h, sl, cl, mel, met, mes):
     if wt < wb:  # force bottom large trapezoid
         return None
-    if d1 < 100:  # diaphrams must be in order
-        return None
-    c = 1250 / 2
     x1 = 50
-    x2 = 2*c - 50
-    # each wheel 20mm*10mm = 200mm² (measured)
-    # pressure on surface (400N/12)/(200mm²) = 0.1667 MPa
-    # diaphram buckling load 4π²E / 12(1-μ²) * (1.27mm/100mm)² = 2.21 MPa
-    # single layer of matboard is enough for a diaphram
+    x2 = 2*C - 50
+    """Buckling
+        each wheel 20mm*10mm = 200mm² (measured)
+        pressure on surface (400N/12)/(200mm²) = 0.1667 MPa
+        all area 1.27mm * (100mm * n + 960mm * 2) = 2440mm² + 127mm² * n
+        max pressure (400N)/(2440mm²) = 0.1640 MPa
+        thin plate buckling load 4π²E / 12(1-μ²) * (1.27mm/100mm)² = 2.21 MPa
+        shear buckling load 5π²E / 12(1-μ²) * ((1.27mm/100mm)² + (1.27mm/100mm)²) = 5.53 MPa
+        single layer of matboard is enough for resisting buckling
+    """
+    offset = 1.0
     cs = csm.trapezoid_nowrap(wt, wb, h)
-    sp = csm.trapezoid_rect_support_diaphram(wt, wb, h)
+    sp = csm.trapezoid_rect_support_diaphragm(wt, wb, h)
     res = [
-        ba.BridgeCrossSection('de:support_1_1', *sp, 10, 30),
-        ba.BridgeCrossSection('de:support_1_2', *sp, 50, 70),
-        ba.BridgeCrossSection('d:support_1', *cs, 30, 50),
-        ba.BridgeCrossSection('de:support_2_1', *sp, 2*c-30, 2*c-10),
-        ba.BridgeCrossSection('de:support_2_2', *sp, 2*c-70, 2*c-50),
-        ba.BridgeCrossSection('d:support_2', *cs, 2*c-50, 2*c-30),
-    ]
-    if ANTISHEAR[0] == 'd':
-        res += [
-            ba.BridgeCrossSection('d:d1_1', *cs, d1-10, d1+10),
-            ba.BridgeCrossSection('d:d1_2', *cs, 2*c-d1-10, 2*c-d1+10),
-        ]
-    d2 = d1 + (c-d1) * 0.7
-    res += [
-        ba.BridgeCrossSection('d:d2_1', *cs, d2-10, d2+10),
-        ba.BridgeCrossSection('d:d2_2', *cs, 2*c-d2-10, 2*c-d2+10),
+        ba.BridgeCrossSection('de:support_1_1', *sp, E11, E12, -offset),
+        ba.BridgeCrossSection('de:support_1_2', *sp, E21, E22, -offset),
+        ba.BridgeCrossSection('d:support_1', *cs, E12, E21, -0.5*offset),
+        ba.BridgeCrossSection('de:support_2_1', *sp, 2*C-E12, 2*C-E11, -offset),
+        ba.BridgeCrossSection('de:support_2_2', *sp, 2*C-E22, 2*C-E21, -offset),
+        ba.BridgeCrossSection('d:support_2', *cs, 2*C-E21, 2*C-E12, -0.5*offset),
+        ba.BridgeCrossSection('d:d1_1', *cs, D1-10, D1+10, -0.5*offset),
+        ba.BridgeCrossSection('d:d1_2', *cs, 2*C-D1-10, 2*C-D1+10, -0.5*offset),
+        ba.BridgeCrossSection('d:d2_1', *cs, D2-10, D2+10, -0.5*offset),
+        ba.BridgeCrossSection('d:d2_2', *cs, 2*C-D2-10, 2*C-D2+10, -0.5*offset),
     ]
     return res
 
 
 if __name__ == "__main__":
 
-    if GLUE_EDGE:
-        initial_params = [91, 30, 75, 180, 1000, 550, 20, 20, 300]
-        initial_params = [91.69915039217975, 30.570958551361343, 77.12400342945995, 183.90514117225823, 1006.2347522196324, 569.591070662502, 28.005635792805723, 22.477612899353225, 406.5955748039444]
-    else:
-        initial_params = [101, 40, 80, 400, 600, 600, 20, 20, 300]
-        initial_params = [100.04684686639436, 51.27584809991874, 84.52556651997077, 308.35508357240985, 772.1308902987869, 527.143956698997, 16.832391579492267, 13.852157193054817, 228.85815976100542]
+    if GLUE_EDGE:  # FoS = 1.227
+        initial_params = [91, 30, 75, 180, 990, 550, 20, 15]
+        initial_params = [93.30687690925592, 31.47898775249033, 80.49833020341086, 174.38359819519445, 1015.7345202782762, 573.0502448715256, 24.433320367758363, 15.486851655988339]
+    else:  # FoS = 1.211
+        initial_params = [101, 40, 80, 400, 600, 600, 20, 20]
+        initial_params = [100.54145679296947, 32.464704401740775, 89.07456971232742, 255.6174743240572, 846.535369050526, 425.4754622128162, 10.05418326813907, 29.165368340775764]
 
     bridge = ba.Bridge(
-        calc_cross_section, calc_diaphrams,
+        calc_cross_section, calc_diaphragms,
         [[75, 150], [20, 100], [20, 100],
          [200, 630], [200, 1000],
          [0, 800], [0, 40], [0, 40],
-         [100, 400]
         ],
-        ['wt', 'wb', 'h', 'sl', 'cl', 'mel', 'met', 'mes', 'd1'],
+        ['wt', 'wb', 'h', 'sl', 'cl', 'mel', 'met', 'mes'],
         initial_params
     )
+    bridge.assert_ccw()
+
     #bridge.optimize_params()
     bridge.analyze(bridge.params, plot=True)
     bridge.plot_3d(zoom=1.5)

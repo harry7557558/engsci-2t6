@@ -11,6 +11,7 @@ import cross_section_analysis as csa
 
 from rectpack import newPacker  # https://github.com/secnot/rectpack
 
+LENGTH = beam_analysis.LENGTH  # beam length
 MATBOARD_W = 1016
 MATBOARD_H = 813
 
@@ -61,13 +62,18 @@ def get_max_bend(x0, x1):
 
 class BridgeCrossSection:
 
-    def __init__(self, label, parts, glues, x0, x1):
+    def __init__(self, label, parts, glues, x0, x1, offset=0.0):
         assert x0 < x1
         self.solved = False
         self.label = label
         self.x0 = x0
         self.x1 = x1
+        self.offset = offset
         self.parts = [[np.array(p) for p in part] for part in parts]
+        if offset != 0:
+            self.parts_offset = [self.calc_offset(part) for part in self.parts]
+        else:
+            self.parts_offset = [part[:] for part in self.parts]
         self.glues = [[np.array(p) for p in glue] for glue in glues]
         if len(parts) == 0:
             return
@@ -92,12 +98,48 @@ class BridgeCrossSection:
 
     def get_rects(self):
         res = []
-        for part in self.parts:
+        for part in self.parts_offset:
             peri = 0
             for (p1, p2) in zip(part[:-1], part[1:]):
                 peri += np.linalg.norm(p2-p1)
             res.append((peri, self.x1-self.x0))
         return res
+
+    def assert_ccw(self):
+        """make sure the points are in counter-clockwise order
+            this only checks parts, not glues"""
+        for i in range(len(self.parts)):
+            part = self.parts[i][:]
+            if len(part) > 2 and \
+               np.linalg.norm(part[-1]-part[0]) > 1e-6:
+                part.append(part[0])
+            sA = 0
+            for (p1, p2) in zip(part[:-1], part[1:]):
+                sA += p1[0]*p2[1]-p1[1]*p2[0]
+            if not sA > -1e-6:
+                print(f"Assert CCW fail: {self.label} at index {i} (area={sA})")
+                assert sA > -1e-6
+
+    def calc_offset(self, part):
+        """inflate the part by self.offset (usually matboard thickness),
+            negative offset -> deflation,
+            assume the cross section is ccw"""
+        assert len(part) >= 2
+        o = self.offset
+        normals = []
+        for p1, p2 in zip(part[:-1], part[1:]):
+            d = p2-p1
+            d /= np.linalg.norm(d)
+            n = np.array([d[1], -d[0]])
+            normals.append(n)
+        new_part = [part[0]+o*normals[0]]
+        for (p1, p2, n1, n2) in zip(
+                part[:-2], part[1:-1], normals[:-1], normals[1:]):
+            p = np.linalg.solve([n1, n2],
+                                [n1.dot(p1)+o, n2.dot(p2)+o])
+            new_part.append(p)
+        new_part.append(part[-1]+o*normals[-1])
+        return new_part
 
 
 # bridge analysis
@@ -120,7 +162,7 @@ class Bridge:
 
     def __init__(self,
                  calc_cross_section: 'Callable',
-                 calc_diaphrams: 'Callable',
+                 calc_diaphragms: 'Callable',
                  param_domains, param_labels,
                  initial_params):
         """
@@ -128,21 +170,35 @@ class Bridge:
                 receives *params
                 returns list[BridgeCrossSection]
                 returns None if parameters violate constraints
-            @calc_diaphrams:
+            @calc_diaphragms:
                 receives *params
                 returns list[BridgeCrossSection]
-                diaphram is at (x0+x1)/2
-                two strips around the diaphram
+                diaphragm is at (x0+x1)/2
+                two strips around the diaphragm
             @param_domains
                 [(a0, a1), (b0, b1), ...]
             @initial_params
                 [a, b, ...]
         """
         self.calc_cross_section = calc_cross_section
-        self.calc_diaphrams = calc_diaphrams
+        self.calc_diaphragms = calc_diaphragms
         self.param_domains = param_domains
         self.param_labels = param_labels
         self.params = initial_params[:]
+
+    def assert_ccw(self):
+        cross_sections = self.calc_cross_section(*self.params)
+        if cross_sections is None:
+            print("`assert_ccw`: Cross section constraint violation.")
+            cross_sections = []
+        for cs in cross_sections:
+            cs.assert_ccw()
+        diaphragms = self.calc_diaphragms(*self.params)
+        if diaphragms is None:
+            print("`assert_ccw`: Diaphragm constraint violation.")
+            diaphragms = []
+        for d in diaphragms:
+            d.assert_ccw()
 
     def calc_glues(self, cross_sections):
         """Calculate glue joints 
@@ -175,21 +231,21 @@ class Bridge:
                 print("Cross section constraint violation.")
             return -1
 
-        diaphrams = self.calc_diaphrams(*params)
-        if diaphrams is None:
+        diaphragms = self.calc_diaphragms(*params)
+        if diaphragms is None:
             if plot:
-                print("Diaphram constraint violation.")
+                print("Diaphragm constraint violation.")
             return -1
-        diaphrams_cs = [0.0, 1250.0]
-        for d in diaphrams:
+        diaphragms_cs = [0.0, LENGTH]
+        for d in diaphragms:
             c = 0.5*(d.x0+d.x1)
             cross_sections += [
-                #BridgeCrossSection(d.label, d.parts, d.glues, d.x0, c),
-                #BridgeCrossSection(d.label, d.parts, d.glues, c, d.x1),                BridgeCrossSection(d.label, d.parts, d.glues, d.x0, c),
-                BridgeCrossSection(d.label, d.parts, d.glues, d.x0, d.x1)
+                #BridgeCrossSection(d.label, d.parts, d.glues, d.x0, c, offset=-csa.LINDEN_M),
+                #BridgeCrossSection(d.label, d.parts, d.glues, c, d.x1, offset=-csa.LINDEN_M),
+                BridgeCrossSection(d.label, d.parts, d.glues, d.x0, d.x1, offset=-csa.LINDEN_M),
             ]
-            diaphrams_cs.append(c)
-        diaphrams_cs.sort()
+            diaphragms_cs.append(c)
+        diaphragms_cs.sort()
 
         # must fit the size of the matboard
         tot_area = sum([cs.area for cs in cross_sections])
@@ -198,7 +254,7 @@ class Bridge:
                 print("Area too large.")
             return -1
         rects = sum([cs.get_rects() for cs in cross_sections], []) + \
-                sum([csa.cross_section_range(d.parts) for d in diaphrams], [])
+                sum([csa.cross_section_range(d.parts_offset) for d in diaphragms], [])
         if not pack_rect(rects):
             if plot:
                 print("Can't pack into matboard.")
@@ -208,7 +264,7 @@ class Bridge:
         glues = self.calc_glues(cross_sections)
 
         # divide into sections
-        xs = diaphrams_cs[:]
+        xs = diaphragms_cs[:]
         for cs in cross_sections:
             xs += [cs.x0, cs.x1]
         xs = sorted(set(xs))
@@ -227,47 +283,54 @@ class Bridge:
             csa.BM_MAX = max(get_max_bend(x0, x1), 1)
             csa.SHEAR_MAX = max(get_max_shear(x0, x1), 1)
             csa.LENGTH = 0
-            for dc1, dc2 in zip(diaphrams_cs[:-1], diaphrams_cs[1:]):
+            for dc1, dc2 in zip(diaphragms_cs[:-1], diaphragms_cs[1:]):
                 if dc1 <= x0 < x1 <= dc2:
                     csa.LENGTH = dc2 - dc1
                     break
             assert csa.LENGTH != 0
-            parts = []
+            parts, parts_offset = [], []
             for cs in cross_sections:
                 if x0 >= cs.x0 and x1 <= cs.x1:
                     parts += cs.parts
+                    parts_offset += cs.parts_offset
             #if len(parts) == 0:
             #    return -1
             fos_bend, fos_bend_buckle, fos_shear, fos_shear_buckle = \
                       csa.analyze_cross_section(
-                parts, [], return_full=True)
+                parts, parts_offset, return_full=True)
             
             # shear at glue joints due to flexual stress
             fos_flexshear = float('inf')
             peri, (xc, yc), (Ix, I) = csa.calc_geometry(parts)
+            glue_to_check = []
+            glue_area = 0.0
             for glue in glues:
                 if glue.label == False:
                     continue
                 if not glue.x0 <= x0 < x1 <= glue.x1:
                     assert x0 >= glue.x1 or x1 <= glue.x0
                     continue
+                glue_to_check.append(glue)
+                dx = csa.cross_section_range(glue.glues)
+                glue_area += (glue.x1-glue.x0)*sum([d[0] for d in dx])
+            for glue in glue_to_check:
                 for (p1, p2) in glue.glues:
                     maxy = max(abs(p1[1]-yc), abs(p2[1]-yc))
                     dFdl = csa.BM_MAX*maxy/I * csa.LINDEN_M
-                    h = dFdl / (glue.x1-glue.x0)
-                    if plot:
-                        #print(maxy, csa.BM_MAX, csa.BM_MAX*maxy/I)
-                        #print(glue.x1-glue.x0)
-                        pass
-                    fos_flexshear = min(fos_flexshear, csa.SHEAR_C/h)
-                    
+                    h = dFdl / (glue.x1-glue.x0)  # failure stress for flexural shear
+                    tf = 400/glue_area  # tension??
+                    if x1-x0 < 20.0:
+                        tf = 0.0  # a cheap way to filter out unwanted
+                    fos_flexshear = min(fos_flexshear,
+                                        csa.SHEAR_C/np.hypot(h, tf))
+
             # apply
             if True:  # varying FoS for each type
                 fos_bend /= 2
                 fos_bend_buckle /= 3
                 fos_shear /= 1.5
                 fos_shear_buckle /= 3
-                fos_flexshear /= 40  # don't think I calculated this one correctly
+                fos_flexshear /= 30  # don't think I calculated this one correctly
             min_fos = min(min_fos,
                           fos_bend, fos_bend_buckle,
                           fos_shear, fos_shear_buckle,
@@ -292,6 +355,7 @@ class Bridge:
                 cs_flexshear += c_flexshear.tolist()
 
         if plot:
+            print("FoS =", min_fos)
             fig, (ax1, ax2) = plt.subplots(2, 1)
             one = np.float64(1)
             ax1.plot(cs_x, one/cs_bend, label="flexural fos⁻¹")
@@ -301,9 +365,9 @@ class Bridge:
             ax1.plot(cs_x, one/cs_flexshear, label="flex shear fos⁻¹")
             ax1.legend()
             rects = sum([cs.get_rects() for cs in cross_sections], []) + \
-                    sum([csa.cross_section_range(d.parts) for d in diaphrams], [])
-            labels = sum([[cs.label]*len(cs.parts) for cs in cross_sections], []) + \
-                     sum([[d.label]*len(d.parts) for d in diaphrams], [])
+                    sum([csa.cross_section_range(d.parts_offset) for d in diaphragms], [])
+            labels = sum([[cs.label]*len(cs.parts_offset) for cs in cross_sections], []) + \
+                     sum([[d.label]*len(d.parts_offset) for d in diaphragms], [])
             pack_rect(rects, labels, ax2)
             ax2.set(xlim=(-100, 3000), ylim=(-100, MATBOARD_H+100))
             plt.show()
@@ -333,7 +397,7 @@ class Bridge:
         print(opt_params, opt_fos)
 
         # brute force search
-        for seed in range(0):
+        for seed in range(10000 if opt_fos < 0 else 0):
             params = self.random_param(seed)
             fos = self.analyze(params)
             if fos > opt_fos:
@@ -391,25 +455,25 @@ class Bridge:
             cross_sections = []
         for cs in cross_sections:
             x0, x1 = cs.x0, cs.x1
-            for part in cs.parts:
+            for part in cs.parts_offset:
                 for p in part:
                     ax.plot3D([x0, x1], [p[0], p[0]], [p[1], p[1]], 'gray')
                 ys = [p[0] for p in part]
                 zs = [p[1] for p in part]
                 ax.plot3D([x0]*len(part), ys, zs, 'gray')
                 ax.plot3D([x1]*len(part), ys, zs, 'gray')
-                for xe in [50, 1200]:
+                for xe in [0.5*LENGTH-575, 0.5*LENGTH+575]:
                     if x0 <= xe <= x1:
                         ax.plot3D([xe]*len(part), ys, zs, 'red')
 
-        diaphrams = self.calc_diaphrams(*self.params)
-        if diaphrams is None:
-            print("Diaphram constraint violation")
-            diaphrams = []
-        for d in diaphrams:
+        diaphragms = self.calc_diaphragms(*self.params)
+        if diaphragms is None:
+            print("Diaphragm constraint violation")
+            diaphragms = []
+        for d in diaphragms:
             x0, x1 = d.x0, d.x1
             xc = 0.5*(x0+x1)
-            for part in d.parts:
+            for part in d.parts_offset:
                 for p in part:
                     ax.plot3D([x0, x1], [p[0], p[0]], [p[1], p[1]], 'black')
                 ys = [p[0] for p in part]
