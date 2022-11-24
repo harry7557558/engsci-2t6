@@ -139,7 +139,7 @@ def solve_beam(
 
         plt.show()
 
-    xs = np.linspace(x1+1e-6, x2-1e-6, 100)
+    xs = np.linspace(x1+1e-6, x2-1e-6, int(x2-x1)//10)
     return (
         (np.array([p1, p2]), np.array([f1, f2])),
         (xs, abs(sfd.evals(xs))),
@@ -175,7 +175,7 @@ def plot_max_responses(plot=True):
     # generate a list of possible train left positions
     train_x1 = -960
     train_x2 = int(LENGTH)
-    xs = np.array(range(train_x1, train_x2+1, 10), dtype=np.float64)
+    xs = np.array(range(train_x1, train_x2+1, 2), dtype=np.float64)
 
     # find the maximum reaction across all positions
     for x in xs:

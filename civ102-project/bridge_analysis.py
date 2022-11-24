@@ -7,6 +7,10 @@ import beam_analysis
 import cross_section_analysis as csa
 
 
+# if this is set to True, use different FoS for different failure modes
+VARYING_FOS = False
+
+
 # matboard parameters
 
 from rectpack import newPacker  # https://github.com/secnot/rectpack
@@ -30,7 +34,17 @@ def pack_rect(rects, labels=None, ax=None):
         return False
     if ax is not None:  # plot
         def plot_rect(x, y, w, h, fmt='-', label=''):
-            ax.plot([x, x+w, x+w, x, x], [y, y, y+h, y+h, y], fmt)
+            xs = [x, x+w, x+w, x, x]
+            ys = [y, y, y+h, y+h, y]
+            if label == 'matboard':
+                ax.fill(xs, ys, '#ccc')
+            elif 'support' in label:
+                ax.fill(xs, ys, '#ffd')
+            elif label.startswith('d:'):
+                ax.fill(xs, ys, '#dff')
+            else:
+                ax.fill(xs, ys, '#fff')
+            ax.plot(xs, ys, fmt)
         plot_rect(0, 0, MATBOARD_W, MATBOARD_H, 'k-', label='matboard')
         legend = ['matboard']
         for rect in abin:
@@ -68,10 +82,13 @@ class BridgeCrossSection:
         self.label = label
         self.x0 = x0
         self.x1 = x1
+        if type(offset) in [int, float]:
+            offset = [offset] * len(parts)
         self.offset = offset
         self.parts = [[np.array(p) for p in part] for part in parts]
         if offset != 0:
-            self.parts_offset = [self.calc_offset(part) for part in self.parts]
+            self.parts_offset = [self.calc_offset(part, o)
+                                 for (part, o) in zip(self.parts, self.offset)]
         else:
             self.parts_offset = [part[:] for part in self.parts]
         self.glues = [[np.array(p) for p in glue] for glue in glues]
@@ -120,26 +137,44 @@ class BridgeCrossSection:
                 print(f"Assert CCW fail: {self.label} at index {i} (area={sA})")
                 assert sA > -1e-6
 
-    def calc_offset(self, part):
-        """inflate the part by self.offset (usually matboard thickness),
-            negative offset -> deflation,
+    def calc_offset(self, part, o):
+        """inflate the part by o(ffset) (usually matboard thickness),
+            negative o -> deflation,
             assume the cross section is ccw"""
         assert len(part) >= 2
-        o = self.offset
+        # calculate normals
         normals = []
         for p1, p2 in zip(part[:-1], part[1:]):
             d = p2-p1
             d /= np.linalg.norm(d)
             n = np.array([d[1], -d[0]])
             normals.append(n)
-        new_part = [part[0]+o*normals[0]]
+        # offset
+        def offset_endpoint(p, n):
+            if abs(n[0]) > abs(n[1]) and o > 0:  # for multi-piece joints
+                return p + np.array([o/n[0], 0]) + np.array([-n[1], n[0]]) * o * np.sign(n[0])
+            else:
+                return p + o * n
+        new_part = [offset_endpoint(part[0], normals[0])]
         for (p1, p2, n1, n2) in zip(
                 part[:-2], part[1:-1], normals[:-1], normals[1:]):
             p = np.linalg.solve([n1, n2],
                                 [n1.dot(p1)+o, n2.dot(p2)+o])
             new_part.append(p)
-        new_part.append(part[-1]+o*normals[-1])
-        return new_part
+        new_part.append(offset_endpoint(part[-1], normals[-1]))
+        if len(part) <= 3:
+            return new_part
+        # resolve endpoints
+        part = new_part
+        d1, d2 = part[1]-part[0], part[-2]-part[-1]
+        if abs(d1[0]*d2[1]-d1[1]*d2[0]) > 1e-12:
+            t1, t2 = np.linalg.solve(np.transpose([d1, -d2]),
+                                     part[-1] - part[0])
+            eps = 1e-6
+            if -eps < t1 < 1+eps and -eps < t2 < 1+eps:
+                part[0] += d1 * t1
+                part[-1] += d2 * t2
+        return part
 
 
 # bridge analysis
@@ -224,7 +259,7 @@ class Bridge:
                 res.append(cs)
         return res
 
-    def analyze(self, params, plot=False):
+    def analyze(self, params, plot=False, show=True):
         cross_sections = self.calc_cross_section(*params)
         if cross_sections is None:
             if plot:
@@ -325,12 +360,14 @@ class Bridge:
                                         csa.SHEAR_C/np.hypot(h, tf))
 
             # apply
-            if True:  # varying FoS for each type
+            if VARYING_FOS:  # varying FoS for each type
                 fos_bend /= 2
                 fos_bend_buckle /= 3
                 fos_shear /= 1.5
                 fos_shear_buckle /= 3
                 fos_flexshear /= 30  # don't think I calculated this one correctly
+            else:
+                fos_flexshear /= 15
             min_fos = min(min_fos,
                           fos_bend, fos_bend_buckle,
                           fos_shear, fos_shear_buckle,
@@ -356,7 +393,7 @@ class Bridge:
 
         if plot:
             print("FoS =", min_fos)
-            fig, (ax1, ax2) = plt.subplots(2, 1)
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
             one = np.float64(1)
             ax1.plot(cs_x, one/cs_bend, label="flexural fos⁻¹")
             ax1.plot(cs_x, one/cs_bend_buckle, label="bend buckle fos⁻¹")
@@ -370,7 +407,8 @@ class Bridge:
                      sum([[d.label]*len(d.parts_offset) for d in diaphragms], [])
             pack_rect(rects, labels, ax2)
             ax2.set(xlim=(-100, 3000), ylim=(-100, MATBOARD_H+100))
-            plt.show()
+            if show:
+                plt.show()
 
         return min_fos
 
@@ -408,9 +446,11 @@ class Bridge:
         opt_params = np.array(opt_params)
 
         # optimize - what the heck?
-        maxi = 1000
+        maxi = 10000
         conv_params, conv_fos = opt_params, opt_fos
         for i in range(maxi):
+            if (i+1)%1000 == 0:
+                print(f"{i+1}/{maxi}")
             alive = 0.5 * 0.01**(i/maxi)
             params = self.rand_normal(i, conv_params, alive)
             fos = self.analyze(params)
@@ -446,7 +486,8 @@ class Bridge:
         print(opt_params.tolist())
         self.analyze(opt_params, plot=True)
 
-    def plot_3d(self, zoom=1.0):
+    def plot_3d(self, zoom=1.0, show=True):
+        plt.figure(figsize=(8, 8))
         ax = plt.axes(projection='3d')
 
         cross_sections = self.calc_cross_section(*self.params)
@@ -494,7 +535,8 @@ class Bridge:
         ax.set_ylim3d([center[1] - radius, center[1] + radius])
         ax.set_zlim3d([center[2] - radius, center[2] + radius])
 
-        plt.show()
+        if show:
+            plt.show()
 
 
 if __name__ == "__main__":

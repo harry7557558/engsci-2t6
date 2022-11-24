@@ -49,7 +49,7 @@ def trapezoid_glue_edge_2(wt, wb, h):
         [(0.5*wt, h), (-0.5*wt, h)],
         [(-0.5*wt, h), (-0.5*wt-10, h)],
     ]
-    return [body, top] + strips, []
+    return [top, body] + strips, []
 
 
 def trapezoid_glue_edge_1(wt, wb, h):
@@ -71,7 +71,7 @@ def trapezoid_glue_edge_1(wt, wb, h):
         [(0.5*wt, h), (0.5*wt-10, h)],
         [(0.5*wt+10, h), (0.5*wt, h)]
     ]
-    return [body, top] + strips, []
+    return [top, body] + strips, []
 
 
 def trapezoid_rect_support(wt, wb, h):

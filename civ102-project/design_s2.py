@@ -1,5 +1,6 @@
 import bridge_analysis as ba
 import cross_section_models as csm
+from export_bridge import export_bridge
 
 
 def mix(a, b, t):
@@ -64,9 +65,9 @@ def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes):
     tes = csm.trapezoid_edge_strenghen(wt, wb, h, met, mes)
     tws = csm.trapezoid_wall_strenghen(wt, wb, h)
     res = [
-        ba.BridgeCrossSection('side_beam_1', *ts, 0, sl),
-        ba.BridgeCrossSection('side_beam_2', *ts, 2*C-sl, 2*C),
-        ba.BridgeCrossSection('central_beam', *tm, C-0.5*cl, C+0.5*cl, offset),
+        ba.BridgeCrossSection('side_beam_1', *ts, 0, sl, [offset]+[0]*4),
+        ba.BridgeCrossSection('side_beam_2', *ts, 2*C-sl, 2*C, [offset]+[0]*4),
+        ba.BridgeCrossSection('central_beam', *tm, C-0.5*cl, C+0.5*cl, [2*offset]+[offset]*4),
         ba.BridgeCrossSection('mid_strenghen', *tes, C-0.5*mel, C+0.5*mel),
         ba.BridgeCrossSection('support_1', *sp, E11, E22, -offset),
         ba.BridgeCrossSection('support_2', *sp, 2*C-E22, 2*C-E11, -offset),
@@ -112,13 +113,14 @@ def calc_diaphragms(wt, wb, h, sl, cl, mel, met, mes):
 
 if __name__ == "__main__":
 
-    if GLUE_EDGE:  # FoS = 1.227
-        initial_params = [91, 30, 75, 180, 990, 550, 20, 15]
-        initial_params = [93.30687690925592, 31.47898775249033, 80.49833020341086, 174.38359819519445, 1015.7345202782762, 573.0502448715256, 24.433320367758363, 15.486851655988339]
-    else:  # FoS = 1.211
-        initial_params = [101, 40, 80, 400, 600, 600, 20, 20]
-        initial_params = [100.54145679296947, 32.464704401740775, 89.07456971232742, 255.6174743240572, 846.535369050526, 425.4754622128162, 10.05418326813907, 29.165368340775764]
+    if GLUE_EDGE:  # FoS = 2.42
+        #initial_params = [91, 30, 65, 180, 990, 500, 20, 15]
+        initial_params = [90.24210663662262, 24.93157394943086, 78.37995082988066, 187.26742258437002, 1000.4587831839657, 608.4024090595526, 43.47192265950994, 11.617134934112164]
+    else:  # FoS = 2.28
+        initial_params = [101, 30, 65, 400, 600, 600, 20, 20]
+        initial_params = [100.82165954525692, 64.36032702165264, 90.4114510065952, 652.6591967573131, 70.57551660710013, 41.45188009721109, 1.939084293269092, 85.55489634215272]
 
+    #initial_params = [100, 40, 100, 180, 1000, 500, 20, 15]  # invalid
     bridge = ba.Bridge(
         calc_cross_section, calc_diaphragms,
         [[75, 150], [20, 100], [20, 100],
@@ -131,5 +133,39 @@ if __name__ == "__main__":
     bridge.assert_ccw()
 
     #bridge.optimize_params()
-    bridge.analyze(bridge.params, plot=True)
-    bridge.plot_3d(zoom=1.5)
+    #bridge.analyze(bridge.params, plot=True)
+    #bridge.plot_3d(zoom=1.5)
+
+    description_ge = """
+<p>
+The bridge design consists of three segments symmetrical about the middle span.
+The middle one is thicker than the two at the sides due to glue joints.
+Glue joints are closer to the end for a lower bending moment and curvature.
+</p>
+<p>
+The body of the bridge is an inverted trapezoid.
+There are two layers of matboard at the top, with flanges extending beyond the top of the trapezoid
+to increase the height of centroidal axis and therefore decrease <i>y</i> in the equation <i>My/I</i>
+and increase compressive failure load.
+Components are designed to strengthen the middle span and the supports of the bridge.
+</p>
+<p>
+The bottom and sides of the trapezoid are folded.
+Inspired by the winning group last year,
+we decide to glue the edges between paddings instead of using folded tabs
+for the top of the trapezoid and diaphragms.
+These parts are mainly subjected to compression and are less likely to fail due to tension and shear.
+Intuitively, folding tabs involves deforming the matboard, making it more likely to buckle.
+</p>
+<p>
+Analysis based on the CIV102 course shows the bridge will first fail due to compression in the midspan.
+However, intuition tells us the glue joint between beam segments may be the weakest part.
+</p>
+""".strip()
+
+    export_bridge(
+        bridge,
+        "design_s2_ge" if GLUE_EDGE else "design_s2_fold",
+        [100, 300, 600] if GLUE_EDGE else [],
+        description_ge if GLUE_EDGE else ""
+    )
