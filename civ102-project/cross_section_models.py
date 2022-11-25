@@ -76,7 +76,7 @@ def trapezoid_glue_edge_1(wt, wb, h):
 
 def trapezoid_rect_support(wt, wb, h):
     assert wt > wb
-    start = (wb/2+(wt-wb)/(2*h)*(0.8*h), 0.8*h)
+    start = (wb/2+(wt-wb)/(2*h)*(0.8*h-10), 0.8*h-10)
     points = [
         (-start[0], start[1]),
         (-0.5*wt, h),
@@ -91,13 +91,13 @@ def trapezoid_rect_support(wt, wb, h):
 def trapezoid_rect_support_diaphragm(wt, wb, h):
     assert wt > wb
     parts = [
-        [(0.5*wt, h), (0.5*wb, 0), (0.5*wt, 0), (0.5*wt, h)],
-        [(-0.5*wt, h), (-0.5*wt, 0), (-0.5*wb, 0), (-0.5*wt, h)]
+        [(0.5*wt, 0), (0.5*wt, h), (0.5*wb, 0), (0.5*wt, 0)],
+        [(-0.5*wt, 0), (-0.5*wb, 0), (-0.5*wt, h), (-0.5*wt, 0)]
     ]
     return parts, []
 
 
-def trapezoid_edge_strenghen(wt, wb, h, et, es):
+def trapezoid_edge_strengthen(wt, wb, h, et, es):
     theta = math.atan((wt-wb)/(2*h))
     ex = 0.5*wt - es*math.sin(theta)
     ey = h - es*math.cos(theta)
@@ -108,7 +108,7 @@ def trapezoid_edge_strenghen(wt, wb, h, et, es):
     return parts, []
 
 
-def trapezoid_wall_strenghen(wt, wb, h):
+def trapezoid_wall_strengthen(wt, wb, h):
     parts = [
         [(0.5*wb, 0), (0.5*wt, h)],
         [(-0.5*wb, 0), (0.5*wt, h)]

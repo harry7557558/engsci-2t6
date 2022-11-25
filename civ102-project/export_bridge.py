@@ -13,6 +13,15 @@ def format_float(x, s=3):
     return f"{{:.{sigfig}g}}".format(x) + tz
 
 
+def wrap_h2(text):
+    h, p, m = 0, 1, 65521
+    for c in text:  # rolling hash
+        h = (h + ord(c)) * p % m
+        p = p * 31 % m
+    h = hex(h)[2:]
+    return f'<h2 id="{h}"><a href="#{h}">{text}</a></h2>'
+
+
 def wrap_svg(content, w, h):
     if isinstance(content, list):
         content = '\n'.join(content)
@@ -45,6 +54,7 @@ def wrap_html(children):
     <meta name="robots" content="none" />
     <style>
         body{{ padding: 0px 10px; }}
+        h2 a{{ color: black; }}
         img{{ max-width: 100%; max-height: 600px; display: block; }}
         td{{ padding: 10px; }}
     </style>
@@ -73,7 +83,8 @@ def export_cross_section_svg(cs: BridgeCrossSection):
     transform = ' '.join(map(str,
         [1, 0, 0, -1, -minx, maxy+th]))
     g = f'<g transform="matrix({transform})">' + '\n'.join(children) + '</g>'
-    text = f'<text x="{0.5*(maxx-minx)}" y="{th}" text-anchor="middle">{cs.label}</text>'
+    label = cs.label[:(cs.label+'%').find('%')]
+    text = f'<text x="{0.5*(maxx-minx)}" y="{th}" text-anchor="middle">{label}</text>'
     return wrap_svg([g, text], maxx-minx, maxy-miny+th)
 
 
@@ -110,16 +121,17 @@ def export_bridge(bridge: Bridge,
         bridge.analyze(bridge.params, plot=True, show=False)
         plt.savefig(imgsrc)
         html_elements += [
-            '<h2>FoS plots</h2>',
-            "<p><b>Top figure</b>: "
-            "the first four FoS are the actual FoS without dividing by factors (I asked Raymond). "
-            "Ignore flexural shear FoS when writing the report "
-            "(and possibly remove that plot in the future) "
-            "because I don't think my formula is correct.</p>",
-            "<p><b>Bottom figure</b>: "
-            "How the matboard is cut. Gray is unused region, "
-            "light yellow is support, light blue is diaphragm. "
-            "I will generate a more readable figure later.</p>",
+            wrap_h2("FoS plots"),
+            """<p><b>Top figure</b>:
+the first four FoS are the actual FoS without dividing by factors (I asked Raymond).
+Ignore flexural shear FoS when writing the report
+(and possibly remove that plot in the future)
+because I don't think my formula is correct.</p>""",
+            """<p><b>Bottom figure</b>:
+How the matboard will be cut. Gray is unused region.
+Light yellow is support. Light blue is diaphragm.
+A light pink rectangle contains multiple diaphragms.
+A more detailed figure appears at the bottom of this page.</p>""",
             f'<img src="{imgsrc}" />',
             '<hr/>'
         ]
@@ -127,7 +139,7 @@ def export_bridge(bridge: Bridge,
         bridge.plot_3d(zoom=1.5, show=False)
         plt.savefig(imgsrc)
         html_elements += [
-            '<h2>3D bridge plot</h2>',
+            wrap_h2("3D bridge plot"),
             "<p>Gray is bridge body. Black is diaphragm. "
             "Red highlights the edge of the platform when the bridge is tested.</p>",
             f'<img src="{imgsrc}" />',
@@ -136,7 +148,7 @@ def export_bridge(bridge: Bridge,
 
     # cross sections
     html_elements += [
-        '<h2>Cross-section components</h2>',
+        wrap_h2("Cross-section components"),
         "<p>All lengths and coordinates are in mm. One pixel on this page is 1&nbsp;mm. "
         "Zoom in in your browser if you think the figures are too small.</p>",
         "<p>A cross section is represented as a list of point coordinates in order. "
@@ -154,7 +166,7 @@ def export_bridge(bridge: Bridge,
 
     # diaphragms
     html_elements += [
-        '<h2>Diaphragm components</h2>',
+        wrap_h2("Diaphragm components"),
         "<p>All locations and coordinates are in mm. One pixel on this page is 1&nbsp;mm.</p>",
         "<p>A diaphragm a polygon represented as a list of point coordinates in order. "
         "The last point in the point list must be the same as the first point to enforce a closed polygon.</p>",
@@ -173,16 +185,16 @@ def export_bridge(bridge: Bridge,
 
     # manual calculation locations
     html_elements += [
-        '<h2>Cross-sections to manually calculate</h2>',
+        wrap_h2("Cross-sections to manually calculate"),
         "<p>Manually analyze these cross sections for the report.</p>",
         "<p>Note that lines may overlap in the diagram. "
         "The coordinates are more trustworthy. "
-        "Zoom in in your browser if you think the figures are too small.</p>",
-        "<p>Glue joints can be identified by inspecting visually.</p>",
+        "Zoom in in your browser if you think the figures are too small. ",
+        "Glue joints can be identified by inspecting visually.</p>",
         "<p>Failure loads for <i>some</i> failure modes calculated from my computer program are given. "
         "The initial weight of the train is 400N. "
         "Since I considered additional factors, I think it is acceptable that a number calculated based on the course is different from the program's result "
-        "(and I expect some of hand results to be larger). "
+        "(and I expect some hand results to be larger). "
         "Let me know if you get a number very different from the program's number so I can check for potential mistakes in my code.</p>",
     ]
     for x in manual_locations:
@@ -228,7 +240,7 @@ def export_bridge(bridge: Bridge,
         fos = '<div>' + '<br/>\n'.join([
             "Location: (" + format_float(x1) + "&nbsp;mm, " + format_float(x2) + "&nbsp;mm)",
             "Max shear: " + format_float(csa.SHEAR_MAX) + "&nbsp;N",
-            "Max BM: " + format_float(1e-3*csa.BM_MAX) + "&nbsp;N⋅m"
+            "Max bending: " + format_float(1e-3*csa.BM_MAX) + "&nbsp;N⋅m"
             "<hr/>"
             "Flexural: " + format_float(W0*fos_bend) + "&nbsp;N",
             "Buckling: " + format_float(W0*fos_bend_buckle) + "&nbsp;N",
@@ -237,7 +249,162 @@ def export_bridge(bridge: Bridge,
         ]) + '</div>'
         html_elements.append(wrap_table([[svg, text, fos]]))
     html_elements.append("<br/><hr/>")
-    html_elements += ["<br/>"]*5
 
+    # how the matboard will be cut
+    html_elements += [
+        wrap_h2("How the matboard will be cut"),
+        f"""<p>
+The matboard is divided into rectangles.
+Bottom left is (0, 0), top right is ({MATBOARD_W}, {MATBOARD_H}).
+Light yellow is support. Light blue is diaphragm.
+White is beam. Gray is unused region.
+All units are in mm. One pixel in this diagram is 1&nbsp;mm.
+</p><p>
+On a desktop device, you can mouse hover a rectangle to read the numbers.
+The second row contains the coordinates of the corners of a rectangle on the matboard.
+The third row contains the width and height of the rectangle on its own coordinate system.
+Note that rectangles may be rotated.
+A sequence of point coordinates in the rectangle's coordinate system
+representing the cut or fold is followed (if cut or fold exists.)
+</p><p>
+When marking and cutting the matboard,
+label each rectangle before cutting it off so we don't mess it up.
+The bridge components are packed very compactly.
+Make sure you make no mistake when marking and cutting the board -
+there is no room for a mistake.
+We have extra materials left, and we may consider using them to
+strenghten the endpoints of the bridge that support the reaction force.
+</p>""",
+    ]
+    html_elements += [
+        '<div id="display" style="position:fixed;display:none;background-color:rgba(250,230,240,0.95);border:1px solid gray;padding:10px;max-width:500px;"></div>'
+        """<script>
+var mouseX = -1, mouseY = -1;
+document.addEventListener('mousemove', function(event) {
+    mouseX = event.clientX, mouseY = event.clientY;
+});
+function displayText(text) {
+    let display = document.getElementById("display");
+    if (text == '') { display.style.display = 'none'; return; }
+    display.style.display = "block";
+    if (mouseX < 0.5*window.innerWidth) {
+        display.style.left = (mouseX+10)+'px';
+        display.style.removeProperty('right');
+    }
+    else {
+        display.style.right = (window.innerWidth-mouseX)+'px';
+        display.style.removeProperty('left');
+    }
+    if (mouseY < 0.5*window.innerHeight) {
+        display.style.top = (mouseY+10)+'px';
+        display.style.removeProperty('bottom');
+    }
+    else {
+        display.style.bottom = (window.innerHeight-mouseY)+'px';
+        display.style.removeProperty('top');
+    }
+    display.innerHTML = text;
+}
+</script>"""
+    ]
+    svg_rects = []
+    svg_marks = []
+    svg_labels = []
+    def add_label(xm, ym, x, y, rotate, label):
+        nonlocal svg_labels
+        svg_labels += [
+            f'<text x="{x}" y="{y+4}" text-anchor="middle" style="pointer-events:none;"'
+            f' transform="scale(1,-1) rotate({rotate},{xm},{ym})">{label}</text>'
+        ]
+    def add_rect(x, y, w, h, label, caption):
+        nonlocal svg_rects
+        fill = plot_rect_color('' if is_diaphragm_label(label) else label)
+        svg_rects += [  
+            f'<rect x="{x}" y="{y}" width="{w}" height="{h}"'
+            f' stroke="black" stoke-width="1px" fill="{fill}"\n'
+            f' onmousemove=\'displayText("{caption}");\'/>'
+        ]
+        xm, ym = x+0.5*w, -(y+0.5*h)
+        if '\n' in label:
+            labels = []
+            for l in label.strip().split('\n'):
+                if l not in labels:
+                    labels.append(l)
+            rotate = -90 if w<8*max([len(l) for l in labels]) and h>w else 0
+            for i in range(len(labels)):
+                add_label(xm, ym, xm, ym+16*(i-0.5*len(labels)+0.5),
+                          rotate, labels[i])
+        else:
+            rotate = -90 if w<8*len(label) and h>w else 0
+            add_label(xm, ym, xm, ym, rotate, label)
+    def add_mark(points, label):
+        nonlocal svg_marks
+        fill = 'none'
+        if is_diaphragm_label(label):
+            fill = plot_rect_color(label)
+        s = []
+        for p in points:
+            s.append(','.join(map(str, p)))
+        s = ' '.join(s)
+        svg_marks += [
+            f'<polyline points="{s}" style="pointer-events:none;"'
+            f' stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="{fill}" />'
+        ]
+    add_rect(0, 0, MATBOARD_W, MATBOARD_H, '', '')
+    for d in diaphragms:
+        c = 0.5*(d.x0+d.x1)
+        cross_sections += [
+            BridgeCrossSection(d.label[:(d.label+'%').find('%')]+'=',
+                               d.parts, d.glues, d.x0, d.x1, offset=-csa.LINDEN_M),
+        ]
+    rects, labels, marks = bridge.generate_rects(
+        cross_sections, diaphragms,
+        require_labels=True, require_marks=True)
+    comps = list(zip(rects, labels, marks))
+    packer = newPacker()
+    for i in range(len(comps)):
+        packer.add_rect(*comps[i][0], str(i))
+    transform = ' '.join(map(str,
+        [1, 0, 0, -1, 1, MATBOARD_H+1]))
+    packer.add_bin(MATBOARD_W, MATBOARD_H)
+    packer.pack()
+    abin = packer[0]
+    if len(abin) < len(rects):
+        html_elements.append(
+            "<h1 style='color:#b00'>Error: cannot pack all parts into the matboard."
+            " The following diagram is incomplete.</h1>")
+    for prect in abin:
+        i = int(prect.rid)
+        rect, label, marks = comps[i]
+        # generate caption
+        caption = [
+            '; '.join(set(label.split('\n'))),
+            "(x1, y1, x2, y2) = ({:.1f}, {:.1f}, {:.1f}, {:.1f})".format(
+                prect.x, prect.y, prect.x+prect.width, prect.y+prect.height),
+            "(w, h) = ({:.1f}, {:.1f})".format(rect[0], rect[1]),
+            "<hr/>"
+        ]
+        for mark in marks:
+            caption.append(', '.join(
+                    ["({:.1f}, {:.1f})".format(p[0], p[1]) for p in mark])+';')
+        # add rect
+        add_rect(prect.x, prect.y, prect.width, prect.height,
+                 label, '<br/>'.join(caption).replace('<hr/><br/>','<hr/>'))
+        p0 = np.array((prect.x, prect.y))
+        A = np.array([[1,0,0],[0,1,0]] if rect[0]==prect.width
+                     else [[0,-1,rect[1]],[1,0,0]])
+        if '\n' not in label:
+            label = '\n'.join([label]*len(marks))
+        for mark, label in zip(marks, label.split('\n')):
+            ps = [p0+A[:,0:2].dot(p)+A[:,2] for p in mark]
+            add_mark(ps, label)
+    svg = [f'<g transform="matrix({transform})">'] + \
+          svg_rects + svg_marks + svg_labels + ["</g>"]
+    svg = wrap_svg(svg, MATBOARD_W+2, MATBOARD_H+2)
+    svg = f"""<div style="overflow-x:scroll" onmouseout="displayText('')">{svg}</div>"""
+    html_elements.append(svg)
+
+    # end
+    html_elements += ["<br/>"]*5
     html = wrap_html(html_elements)
     open(filename+".html", 'wb').write(bytearray(html, 'utf-8'))

@@ -252,12 +252,21 @@ def intersection_pieces(pieces1, pieces2):
     return pieces
 
 
-def cross_section_range(parts):
+def cross_section_range(parts, bound_only=False):
     res = []
+    minx, miny, maxx, maxy = np.inf, np.inf, -np.inf, -np.inf
     for part in parts:
         x = [p[0] for p in part]
         y = [p[1] for p in part]
-        res.append((max(x)-min(x), max(y)-min(y)))
+        if bound_only:
+            minx = min(minx, min(x))
+            miny = min(miny, min(y))
+            maxx = max(maxx, max(x))
+            maxy = max(maxy, max(y))
+        else:
+            res.append((max(x)-min(x), max(y)-min(y)))
+    if bound_only:
+        return (maxx-minx, maxy-miny)
     return res
 
 

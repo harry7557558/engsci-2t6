@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CIV102 Bridge Design</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="none" />
+    <style>
+        body{ padding: 0px 10px; }
+        h2 a{ color: black; }
+        img{ max-width: 100%; max-height: 600px; display: block; }
+        td{ padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>CIV102 Bridge Design <code>`design_nd`</code></h1>
+<p>
+The bridge design consists of three segments symmetrical about the middle span.
+The middle one is thicker than the two at the sides due to glue joints.
+Glue joints are closer to the end for a lower bending moment and curvature.
+</p>
+<p>
+The body of the bridge is an inverted trapezoid.
+There are two layers of matboard at the top, with flanges extending beyond the top of the trapezoid
+to increase the height of centroidal axis and therefore decrease <i>y</i> in the equation <i>My/I</i>
+and increase compressive failure load.
+Components are designed to strengthen the middle span and the supports of the bridge.
+</p>
+<p>
+The bottom and sides of the trapezoid are folded.
+Inspired by the winning group last year,
+we decide to glue the edges between paddings instead of using folded tabs
+for the top of the trapezoid and diaphragms.
+These parts are mainly subjected to compression and are less likely to fail due to tension and shear.
+Intuitively, folding tabs involves deforming the matboard, making it more likely to buckle.
+</p>
+<p>
+This bridge design has 7 diaphragms in the middle span.
+Since the analysis shows shear buckling is not the main cause of the bridge's failure,
+we consider there is no need for extra diaphragms at the ends.
+The cross section of the middle of the bridge will likely shrink vertically due to bending moment
+and therefore have a decreased second moment of area.
+Diaphragms are placed in the middle to resist such deformation.
+</p>
+<p>
+Analysis based on the CIV102 course shows the bridge will first fail due to compression in the midspan.
+However, intuition tells us the glue joint between beam segments may be the weakest part.
+The bridge may also crush at the ends due to reaction force.
+</p>
+<hr/>
+<h2 id="990"><a href="#990">FoS plots</a></h2>
+<p><b>Top figure</b>:
+the first four FoS are the actual FoS without dividing by factors (I asked Raymond).
+Ignore flexural shear FoS when writing the report
+(and possibly remove that plot in the future)
+because I don't think my formula is correct.</p>
+<p><b>Bottom figure</b>:
+How the matboard will be cut. Gray is unused region.
+Light yellow is support. Light blue is diaphragm.
+A light pink rectangle contains multiple diaphragms.
+A more detailed figure appears at the bottom of this page.</p>
+<img src="design_nd_fos.png" />
+<hr/>
+<h2 id="637f"><a href="#637f">3D bridge plot</a></h2>
+<p>Gray is bridge body. Black is diaphragm. Red highlights the edge of the platform when the bridge is tested.</p>
+<img src="design_nd_3d.png" />
+<hr/>
+<h2 id="c0b0"><a href="#c0b0">Cross-section components</a></h2>
+<p>All lengths and coordinates are in mm. One pixel on this page is 1&nbsp;mm. Zoom in in your browser if you think the figures are too small.</p>
+<p>A cross section is represented as a list of point coordinates in order. This format makes it easier to analyze computationally.</p>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="118.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 108.60466561610673)"><polyline points="55.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -23.093957563140233,-0.0 23.09395756314023,-0.0 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,81.10466561610673 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,81.10466561610673 -45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -55.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">side_beam_1</text>
+</svg><br/>
+</td>
+<td><div>length: 220<br/>
+(55.8, 82.6), (-55.8, 82.6);<br/>
+(-45.8, 81.1), (-23.1, 0), (23.1, 0), (45.8, 81.1);<br/>
+(55.8, 81.1), (45.8, 81.1);<br/>
+(45.8, 81.1), (-45.8, 81.1);<br/>
+(-45.8, 81.1), (-55.8, 81.1);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="118.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 108.60466561610673)"><polyline points="55.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -23.093957563140233,-0.0 23.09395756314023,-0.0 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,81.10466561610673 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,81.10466561610673 -45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -55.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">side_beam_2</text>
+</svg><br/>
+</td>
+<td><div>length: 220<br/>
+(55.8, 82.6), (-55.8, 82.6);<br/>
+(-45.8, 81.1), (-23.1, 0), (23.1, 0), (45.8, 81.1);<br/>
+(55.8, 81.1), (45.8, 81.1);<br/>
+(45.8, 81.1), (-45.8, 81.1);<br/>
+(-45.8, 81.1), (-55.8, 81.1);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="121.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 110.10466561610673)"><polyline points="55.7900134239625,84.10466561610673 -55.7900134239625,84.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-47.75186400741747,82.54917290429523 -24.23182716612183,-1.5 24.231827166121825,-1.5 47.75186400741747,82.54917290429523" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,82.60466561610673 45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,82.60466561610673 -45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">central_beam</text>
+</svg><br/>
+</td>
+<td><div>length: 927<br/>
+(55.8, 84.1), (-55.8, 84.1);<br/>
+(-47.8, 82.5), (-24.2, -1.5), (24.2, -1.5), (47.8, 82.5);<br/>
+(55.8, 82.6), (45.8, 82.6);<br/>
+(45.8, 82.6), (-45.8, 82.6);<br/>
+(-45.8, 82.6), (-55.8, 82.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="111.58002684792501" height="43.92969526108858">
+    <g transform="matrix(1 0 0 -1 55.7900134239625 107.10466561610673)"><polyline points="43.5709942684329,73.17497035501815 45.790013423962506,81.10466561610673 25.573451800286975,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-25.573451800286975,81.10466561610673 -45.7900134239625,81.10466561610673 -43.5709942684329,73.17497035501815" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.790013423962506" y="16" text-anchor="middle">mid_strengthen</text>
+</svg><br/>
+</td>
+<td><div>length: 401<br/>
+(43.6, 73.2), (45.8, 81.1), (25.6, 81.1);<br/>
+(-25.6, 81.1), (-45.8, 81.1), (-43.6, 73.2);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="108.580026847925" height="104.67820256011726">
+    <g transform="matrix(1 0 0 -1 54.2900134239625 96.17820256011726)"><polyline points="-39.89694329454149,54.47950644922877 -44.2900134239625,70.17820256011726 -44.2900134239625,1.5 44.2900134239625,1.5 44.2900134239625,70.17820256011724 39.89694329454149,54.47950644922877" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="54.2900134239625" y="16" text-anchor="middle">support_1</text>
+</svg><br/>
+</td>
+<td><div>length: 60<br/>
+(-39.9, 54.5), (-44.3, 70.2), (-44.3, 1.5), (44.3, 1.5), (44.3, 70.2), (39.9, 54.5);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="108.580026847925" height="104.67820256011726">
+    <g transform="matrix(1 0 0 -1 54.2900134239625 96.17820256011726)"><polyline points="-39.89694329454149,54.47950644922877 -44.2900134239625,70.17820256011726 -44.2900134239625,1.5 44.2900134239625,1.5 44.2900134239625,70.17820256011724 39.89694329454149,54.47950644922877" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="54.2900134239625" y="16" text-anchor="middle">support_2</text>
+</svg><br/>
+</td>
+<td><div>length: 60<br/>
+(-39.9, 54.5), (-44.3, 70.2), (-44.3, 1.5), (44.3, 1.5), (44.3, 70.2), (39.9, 54.5);</div></td></tr></table>
+<hr/>
+<h2 id="a9ec"><a href="#a9ec">Diaphragm components</a></h2>
+<p>All locations and coordinates are in mm. One pixel on this page is 1&nbsp;mm.</p>
+<p>A diaphragm a polygon represented as a list of point coordinates in order. The last point in the point list must be the same as the first point to enforce a closed polygon.</p>
+<p>In bridge construction, two 1cm strips at each side of a diaphragm and the thin edges of the diaphragm are glued.</p>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="110.580026847925" height="112.96251126411023">
+    <g transform="matrix(1 0 0 -1 55.2900134239625 103.46251126411023)"><polyline points="45.2900134239625,0.5 45.2900134239625,77.46251126411022 23.753084055345273,0.5 45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.2900134239625,0.5 -23.75308405534527,0.5 -45.2900134239625,77.46251126411023 -45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.2900134239625" y="16" text-anchor="middle">de:support_1_1</text>
+</svg><br/>
+</td>
+<td><div>location: 10 from one end<br/>
+(45.3, 0.5), (45.3, 77.5), (23.8, 0.5), (45.3, 0.5);<br/>
+(-45.3, 0.5), (-23.8, 0.5), (-45.3, 77.5), (-45.3, 0.5);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="111.580026847925" height="117.10466561610673">
+    <g transform="matrix(1 0 0 -1 55.7900134239625 107.10466561610673)"><polyline points="45.7900134239625,81.10466561610673 -45.7900134239625,81.10466561610673 -23.093957563140233,-0.0 23.09395756314023,-0.0 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.7900134239625" y="16" text-anchor="middle">de:support_1</text>
+</svg><br/>
+</td>
+<td><div>location: 30 from one end<br/>
+(45.8, 81.1), (-45.8, 81.1), (-23.1, 0), (23.1, 0), (45.8, 81.1);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="110.580026847925" height="112.96251126411023">
+    <g transform="matrix(1 0 0 -1 55.2900134239625 103.46251126411023)"><polyline points="45.2900134239625,0.5 45.2900134239625,77.46251126411022 23.753084055345273,0.5 45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.2900134239625,0.5 -23.75308405534527,0.5 -45.2900134239625,77.46251126411023 -45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.2900134239625" y="16" text-anchor="middle">de:support_1_2</text>
+</svg><br/>
+</td>
+<td><div>location: 50 from one end<br/>
+(45.3, 0.5), (45.3, 77.5), (23.8, 0.5), (45.3, 0.5);<br/>
+(-45.3, 0.5), (-23.8, 0.5), (-45.3, 77.5), (-45.3, 0.5);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d1_1</text>
+</svg><br/>
+</td>
+<td><div>location: 230 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d2_1</text>
+</svg><br/>
+</td>
+<td><div>location: 419 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d3_1</text>
+</svg><br/>
+</td>
+<td><div>location: 510 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d4</text>
+</svg><br/>
+</td>
+<td><div>location: 630 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d3_2</text>
+</svg><br/>
+</td>
+<td><div>location: 750 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d2_2</text>
+</svg><br/>
+</td>
+<td><div>location: 841 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="112.89827983233508" height="118.10466561610673">
+    <g transform="matrix(1 0 0 -1 56.449139916167546 107.60466561610673)"><polyline points="46.44913991616753,81.60466561610673 -46.449139916167546,81.60466561610673 -23.47324743080076,-0.5 23.473247430800757,-0.5 46.44913991616753,81.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="56.44913991616754" y="16" text-anchor="middle">d:d1_2</text>
+</svg><br/>
+</td>
+<td><div>location: 1030 from one end<br/>
+(46.4, 81.6), (-46.4, 81.6), (-23.5, -0.5), (23.5, -0.5), (46.4, 81.6);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="110.580026847925" height="112.96251126411023">
+    <g transform="matrix(1 0 0 -1 55.2900134239625 103.46251126411023)"><polyline points="45.2900134239625,0.5 45.2900134239625,77.46251126411022 23.753084055345273,0.5 45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.2900134239625,0.5 -23.75308405534527,0.5 -45.2900134239625,77.46251126411023 -45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.2900134239625" y="16" text-anchor="middle">de:support_2_2</text>
+</svg><br/>
+</td>
+<td><div>location: 1210 from one end<br/>
+(45.3, 0.5), (45.3, 77.5), (23.8, 0.5), (45.3, 0.5);<br/>
+(-45.3, 0.5), (-23.8, 0.5), (-45.3, 77.5), (-45.3, 0.5);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="111.580026847925" height="117.10466561610673">
+    <g transform="matrix(1 0 0 -1 55.7900134239625 107.10466561610673)"><polyline points="45.7900134239625,81.10466561610673 -45.7900134239625,81.10466561610673 -23.093957563140233,-0.0 23.09395756314023,-0.0 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.7900134239625" y="16" text-anchor="middle">de:support_2</text>
+</svg><br/>
+</td>
+<td><div>location: 1230 from one end<br/>
+(45.8, 81.1), (-45.8, 81.1), (-23.1, 0), (23.1, 0), (45.8, 81.1);</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="110.580026847925" height="112.96251126411023">
+    <g transform="matrix(1 0 0 -1 55.2900134239625 103.46251126411023)"><polyline points="45.2900134239625,0.5 45.2900134239625,77.46251126411022 23.753084055345273,0.5 45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.2900134239625,0.5 -23.75308405534527,0.5 -45.2900134239625,77.46251126411023 -45.2900134239625,0.5" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="55.2900134239625" y="16" text-anchor="middle">de:support_2_1</text>
+</svg><br/>
+</td>
+<td><div>location: 1250 from one end<br/>
+(45.3, 0.5), (45.3, 77.5), (23.8, 0.5), (45.3, 0.5);<br/>
+(-45.3, 0.5), (-23.8, 0.5), (-45.3, 77.5), (-45.3, 0.5);</div></td></tr></table>
+<hr/>
+<h2 id="79a2"><a href="#79a2">Cross-sections to manually calculate</a></h2>
+<p>Manually analyze these cross sections for the report.</p>
+<p>Note that lines may overlap in the diagram. The coordinates are more trustworthy. Zoom in in your browser if you think the figures are too small. 
+Glue joints can be identified by inspecting visually.</p>
+<p>Failure loads for <i>some</i> failure modes calculated from my computer program are given. The initial weight of the train is 400N. Since I considered additional factors, I think it is acceptable that a number calculated based on the course is different from the program's result (and I expect some hand results to be larger). Let me know if you get a number very different from the program's number so I can check for potential mistakes in my code.</p>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="118.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 108.60466561610673)"><polyline points="55.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -23.093957563140233,-0.0 23.09395756314023,-0.0 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,81.10466561610673 45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,81.10466561610673 -45.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,81.10466561610673 -55.7900134239625,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">x=100</text>
+</svg></td>
+<td><div>length: 106.3<br/>
+(55.8, 82.6), (-55.8, 82.6);<br/>
+(-45.8, 81.1), (-23.1, 0), (23.1, 0), (45.8, 81.1);<br/>
+(55.8, 81.1), (45.8, 81.1);<br/>
+(45.8, 81.1), (-45.8, 81.1);<br/>
+(-45.8, 81.1), (-55.8, 81.1);</div></td>
+<td><div>Location: (60&nbsp;mm, 166.3&nbsp;mm)<br/>
+Max shear: 251&nbsp;N<br/>
+Max bending: 23.9&nbsp;N⋅m<hr/>Flexural: 2150&nbsp;N<br/>
+Buckling: 4010&nbsp;N<br/>
+Shear: 1180&nbsp;N<br/>
+Shear buckling: 1492&nbsp;N</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="121.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 110.10466561610673)"><polyline points="55.7900134239625,84.10466561610673 -55.7900134239625,84.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-47.75186400741747,82.54917290429523 -24.23182716612183,-1.5 24.231827166121825,-1.5 47.75186400741747,82.54917290429523" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,82.60466561610673 45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,82.60466561610673 -45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">x=300</text>
+</svg></td>
+<td><div>length: 210<br/>
+(55.8, 84.1), (-55.8, 84.1);<br/>
+(-47.8, 82.5), (-24.2, -1.5), (24.2, -1.5), (47.8, 82.5);<br/>
+(55.8, 82.6), (45.8, 82.6);<br/>
+(45.8, 82.6), (-45.8, 82.6);<br/>
+(-45.8, 82.6), (-55.8, 82.6);</div></td>
+<td><div>Location: (220&nbsp;mm, 429&nbsp;mm)<br/>
+Max shear: 196.2&nbsp;N<br/>
+Max bending: 57.3&nbsp;N⋅m<hr/>Flexural: 938&nbsp;N<br/>
+Buckling: 1857&nbsp;N<br/>
+Shear: 1669&nbsp;N<br/>
+Shear buckling: 2070&nbsp;N</div></td></tr></table>
+<table><tr><td>
+<svg xmlns="http://www.w3.org/2000/svg" width="131.580026847925" height="121.60466561610673">
+    <g transform="matrix(1 0 0 -1 65.7900134239625 110.10466561610673)"><polyline points="55.7900134239625,84.10466561610673 -55.7900134239625,84.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-47.75186400741747,82.54917290429523 -24.23182716612183,-1.5 24.231827166121825,-1.5 47.75186400741747,82.54917290429523" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="55.7900134239625,82.60466561610673 45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="45.7900134239625,82.60466561610673 -45.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-45.7900134239625,82.60466561610673 -55.7900134239625,82.60466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="43.5709942684329,73.17497035501815 45.790013423962506,81.10466561610673 25.573451800286975,81.10466561610673" stroke-width="1.27" stroke="black" fill="none" />
+<polyline points="-25.573451800286975,81.10466561610673 -45.7900134239625,81.10466561610673 -43.5709942684329,73.17497035501815" stroke-width="1.27" stroke="black" fill="none" /></g>
+<text x="65.7900134239625" y="16" text-anchor="middle">x=600</text>
+</svg></td>
+<td><div>length: 401<br/>
+(55.8, 84.1), (-55.8, 84.1);<br/>
+(-47.8, 82.5), (-24.2, -1.5), (24.2, -1.5), (47.8, 82.5);<br/>
+(55.8, 82.6), (45.8, 82.6);<br/>
+(45.8, 82.6), (-45.8, 82.6);<br/>
+(-45.8, 82.6), (-55.8, 82.6);<br/>
+(43.6, 73.2), (45.8, 81.1), (25.6, 81.1);<br/>
+(-25.6, 81.1), (-45.8, 81.1), (-43.6, 73.2);</div></td>
+<td><div>Location: (429&nbsp;mm, 831&nbsp;mm)<br/>
+Max shear: 126.6&nbsp;N<br/>
+Max bending: 65.4&nbsp;N⋅m<hr/>Flexural: 958&nbsp;N<br/>
+Buckling: 6160&nbsp;N<br/>
+Shear: 2550&nbsp;N<br/>
+Shear buckling: 4510&nbsp;N</div></td></tr></table>
+<br/><hr/>
+<h2 id="7105"><a href="#7105">How the matboard will be cut</a></h2>
+<p>
+The matboard is divided into rectangles.
+Bottom left is (0, 0), top right is (1016, 813).
+Light yellow is support. Light blue is diaphragm.
+White is beam. Gray is unused region.
+All units are in mm. One pixel in this diagram is 1&nbsp;mm.
+</p><p>
+On a desktop device, you can mouse hover a rectangle to read the numbers.
+The second row contains the coordinates of the corners of a rectangle on the matboard.
+The third row contains the width and height of the rectangle on its own coordinate system.
+Note that rectangles may be rotated.
+A sequence of point coordinates in the rectangle's coordinate system
+representing the cut or fold is followed (if cut or fold exists.)
+</p><p>
+When marking and cutting the matboard,
+label each rectangle before cutting it off so we don't mess it up.
+The bridge components are packed very compactly.
+Make sure you make no mistake when marking and cutting the board -
+there is no room for a mistake.
+We have extra materials left, and we may consider using them to
+strenghten the endpoints of the bridge that support the reaction force.
+</p>
+<div id="display" style="position:fixed;display:none;background-color:rgba(250,230,240,0.95);border:1px solid gray;padding:10px;max-width:500px;"></div><script>
+var mouseX = -1, mouseY = -1;
+document.addEventListener('mousemove', function(event) {
+    mouseX = event.clientX, mouseY = event.clientY;
+});
+function displayText(text) {
+    let display = document.getElementById("display");
+    if (text == '') { display.style.display = 'none'; return; }
+    display.style.display = "block";
+    if (mouseX < 0.5*window.innerWidth) {
+        display.style.left = (mouseX+10)+'px';
+        display.style.removeProperty('right');
+    }
+    else {
+        display.style.right = (window.innerWidth-mouseX)+'px';
+        display.style.removeProperty('left');
+    }
+    if (mouseY < 0.5*window.innerHeight) {
+        display.style.top = (mouseY+10)+'px';
+        display.style.removeProperty('bottom');
+    }
+    else {
+        display.style.bottom = (window.innerHeight-mouseY)+'px';
+        display.style.removeProperty('top');
+    }
+    display.innerHTML = text;
+}
+</script>
+<div style="overflow-x:scroll" onmouseout="displayText('')">
+<svg xmlns="http://www.w3.org/2000/svg" width="1018" height="815">
+    <g transform="matrix(1 0 0 -1 1 814)">
+<rect x="0" y="0" width="1016" height="813" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("");'/>
+<rect x="0" y="0" width="927.3505703015934" height="223.01972668622415" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("central_beam<br/>(x1, y1, x2, y2) = (0.0, 0.0, 927.4, 223.0)<br/>(w, h) = (223.0, 927.4)<br/><hr/>(87.3, 0.0), (87.3, 927.4);<br/>(135.7, 0.0), (135.7, 927.4);");'/>
+<rect x="0" y="223.01972668622415" width="927.3505703015934" height="111.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("central_beam<br/>(x1, y1, x2, y2) = (0.0, 223.0, 927.4, 334.6)<br/>(w, h) = (111.6, 927.4)<br/><hr/>");'/>
+<rect x="0" y="334.59975353414916" width="927.3505703015934" height="91.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("central_beam<br/>(x1, y1, x2, y2) = (0.0, 334.6, 927.4, 426.2)<br/>(w, h) = (91.6, 927.4)<br/><hr/>");'/>
+<rect x="0" y="426.17978038207417" width="214.62873840066425" height="219.58374917543213" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_1<br/>(x1, y1, x2, y2) = (0.0, 426.2, 214.6, 645.8)<br/>(w, h) = (214.6, 219.6)<br/><hr/>(84.2, 0.0), (84.2, 219.6);<br/>(130.4, 0.0), (130.4, 219.6);");'/>
+<rect x="214.62873840066425" y="426.17978038207417" width="214.62873840066425" height="219.5837491754321" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_2<br/>(x1, y1, x2, y2) = (214.6, 426.2, 429.3, 645.8)<br/>(w, h) = (214.6, 219.6)<br/><hr/>(84.2, 0.0), (84.2, 219.6);<br/>(130.4, 0.0), (130.4, 219.6);");'/>
+<rect x="0" y="645.7635295575063" width="219.58374917543213" height="111.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_1<br/>(x1, y1, x2, y2) = (0.0, 645.8, 219.6, 757.3)<br/>(w, h) = (111.6, 219.6)<br/><hr/>");'/>
+<rect x="219.58374917543213" y="645.7635295575062" width="219.5837491754321" height="111.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_2<br/>(x1, y1, x2, y2) = (219.6, 645.8, 439.2, 757.3)<br/>(w, h) = (111.6, 219.6)<br/><hr/>");'/>
+<rect x="429.2574768013285" y="426.17978038207417" width="219.58374917543213" height="91.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_1<br/>(x1, y1, x2, y2) = (429.3, 426.2, 648.8, 517.8)<br/>(w, h) = (91.6, 219.6)<br/><hr/>");'/>
+<rect x="429.2574768013285" y="517.7598072299992" width="219.5837491754321" height="91.580026847925" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_2<br/>(x1, y1, x2, y2) = (429.3, 517.8, 648.8, 609.3)<br/>(w, h) = (91.6, 219.6)<br/><hr/>");'/>
+<rect x="927.3505703015934" y="0" width="60" height="258.53999770836873" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("support_1<br/>(x1, y1, x2, y2) = (927.4, 0.0, 987.4, 258.5)<br/>(w, h) = (258.5, 60.0)<br/><hr/>(16.3, 0.0), (16.3, 60.0);<br/>(85.0, 0.0), (85.0, 60.0);<br/>(173.6, 0.0), (173.6, 60.0);<br/>(242.2, 0.0), (242.2, 60.0);");'/>
+<rect x="927.3505703015934" y="258.53999770836873" width="60.0" height="258.53999770836873" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("support_2<br/>(x1, y1, x2, y2) = (927.4, 258.5, 987.4, 517.1)<br/>(w, h) = (258.5, 60.0)<br/><hr/>(16.3, 0.0), (16.3, 60.0);<br/>(85.0, 0.0), (85.0, 60.0);<br/>(173.6, 0.0), (173.6, 60.0);<br/>(242.2, 0.0), (242.2, 60.0);");'/>
+<rect x="439.1674983508642" y="609.3398340779241" width="82.10466561610673" height="162.82066717930337" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("d:d2_1; d:d2_2<br/>(x1, y1, x2, y2) = (439.2, 609.3, 521.3, 772.2)<br/>(w, h) = (162.8, 82.1)<br/><hr/>(92.9, 82.1), (0.0, 82.1), (23.0, 0.0), (69.9, 0.0), (92.9, 82.1);<br/>(69.9, 0.0), (162.8, 0.0), (139.8, 82.1), (92.9, 82.1), (69.9, 0.0);");'/>
+<rect x="521.272163966971" y="609.3398340779241" width="82.10466561610673" height="162.82066717930337" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("d:d3_1; d:d3_2<br/>(x1, y1, x2, y2) = (521.3, 609.3, 603.4, 772.2)<br/>(w, h) = (162.8, 82.1)<br/><hr/>(92.9, 82.1), (0.0, 82.1), (23.0, 0.0), (69.9, 0.0), (92.9, 82.1);<br/>(69.9, 0.0), (162.8, 0.0), (139.8, 82.1), (92.9, 82.1), (69.9, 0.0);");'/>
+<rect x="987.3505703015934" y="0" width="28.45088691153841" height="401.32803738021084" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("mid_strengthen<br/>(x1, y1, x2, y2) = (987.4, 0.0, 1015.8, 401.3)<br/>(w, h) = (28.5, 401.3)<br/><hr/>(8.2, 0.0), (8.2, 401.3);");'/>
+<rect x="987.3505703015934" y="401.32803738021084" width="28.450886911538397" height="401.32803738021084" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("mid_strengthen<br/>(x1, y1, x2, y2) = (987.4, 401.3, 1015.8, 802.7)<br/>(w, h) = (28.5, 401.3)<br/><hr/>(20.2, 0.0), (20.2, 401.3);");'/>
+<rect x="0" y="802.6560747604217" width="927.3505703015934" height="10.0" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("central_beam<br/>(x1, y1, x2, y2) = (0.0, 802.7, 927.4, 812.7)<br/>(w, h) = (10.0, 927.4)<br/><hr/>");'/>
+<rect x="0" y="772.1605012572275" width="927.3505703015934" height="10.0" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("central_beam<br/>(x1, y1, x2, y2) = (0.0, 772.2, 927.4, 782.2)<br/>(w, h) = (10.0, 927.4)<br/><hr/>");'/>
+<rect x="603.3768295830778" y="609.3398340779241" width="82.10466561610673" height="92.89827983233508" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("de:support_1_2; d:d1_1<br/>(x1, y1, x2, y2) = (603.4, 609.3, 685.5, 702.2)<br/>(w, h) = (92.9, 82.1)<br/><hr/>(91.7, 1.0), (91.7, 78.0), (70.2, 1.0), (91.7, 1.0);<br/>(1.2, 1.0), (22.7, 1.0), (1.2, 78.0), (1.2, 1.0);<br/>(92.9, 82.1), (0.0, 82.1), (23.0, 0.0), (69.9, 0.0), (92.9, 82.1);");'/>
+<rect x="648.8412259767606" y="517.0799954167375" width="92.89827983233508" height="82.10466561610673" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("d:d4<br/>(x1, y1, x2, y2) = (648.8, 517.1, 741.7, 599.2)<br/>(w, h) = (92.9, 82.1)<br/><hr/>(92.9, 82.1), (0.0, 82.1), (23.0, 0.0), (69.9, 0.0), (92.9, 82.1);");'/>
+<rect x="648.8412259767606" y="426.17978038207417" width="92.89827983233508" height="82.10466561610673" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("d:d1_2; de:support_2_2<br/>(x1, y1, x2, y2) = (648.8, 426.2, 741.7, 508.3)<br/>(w, h) = (92.9, 82.1)<br/><hr/>(92.9, 82.1), (0.0, 82.1), (23.0, 0.0), (69.9, 0.0), (92.9, 82.1);<br/>(91.7, 1.0), (91.7, 78.0), (70.2, 1.0), (91.7, 1.0);<br/>(1.2, 1.0), (22.7, 1.0), (1.2, 78.0), (1.2, 1.0);");'/>
+<rect x="685.4814951991846" y="599.1846610328441" width="81.10466561610673" height="91.580026847925" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("de:support_1; de:support_1_1<br/>(x1, y1, x2, y2) = (685.5, 599.2, 766.6, 690.8)<br/>(w, h) = (91.6, 81.1)<br/><hr/>(91.1, 0.5), (91.1, 77.5), (69.5, 0.5), (91.1, 0.5);<br/>(0.5, 0.5), (22.0, 0.5), (0.5, 77.5), (0.5, 0.5);<br/>(91.6, 81.1), (0.0, 81.1), (22.7, 0.0), (68.9, 0.0), (91.6, 81.1);");'/>
+<rect x="685.4814951991846" y="690.7646878807691" width="91.580026847925" height="81.10466561610673" stroke="black" stoke-width="1px" fill="#ccc"
+ onmousemove='displayText("de:support_2; de:support_2_1<br/>(x1, y1, x2, y2) = (685.5, 690.8, 777.1, 771.9)<br/>(w, h) = (91.6, 81.1)<br/><hr/>(91.6, 81.1), (0.0, 81.1), (22.7, 0.0), (68.9, 0.0), (91.6, 81.1);<br/>(91.1, 0.5), (91.1, 77.5), (69.5, 0.5), (91.1, 0.5);<br/>(0.5, 0.5), (22.0, 0.5), (0.5, 77.5), (0.5, 0.5);");'/>
+<rect x="927.3505703015934" y="517.0799954167375" width="20" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_1=<br/>(x1, y1, x2, y2) = (927.4, 517.1, 947.4, 812.7)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="947.3505703015934" y="517.0799954167375" width="20.0" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d1_1=<br/>(x1, y1, x2, y2) = (947.4, 517.1, 967.4, 812.7)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="967.3505703015934" y="517.0799954167375" width="20.0" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d2_1=<br/>(x1, y1, x2, y2) = (967.4, 517.1, 987.4, 812.7)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="0" y="782.1605012572275" width="295.6584550323551" height="20.0" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d3_1=<br/>(x1, y1, x2, y2) = (0.0, 782.2, 295.7, 802.2)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="295.6584550323551" y="782.1605012572275" width="295.6584550323551" height="20.0" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d4=<br/>(x1, y1, x2, y2) = (295.7, 782.2, 591.3, 802.2)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="591.3169100647102" y="782.1605012572275" width="295.6584550323551" height="20.0" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d3_2=<br/>(x1, y1, x2, y2) = (591.3, 782.2, 887.0, 802.2)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="777.0615220471095" y="426.17978038207417" width="20.0" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d2_2=<br/>(x1, y1, x2, y2) = (777.1, 426.2, 797.1, 721.8)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="797.0615220471095" y="426.17978038207417" width="20.0" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#dff"
+ onmousemove='displayText("d:d1_2=<br/>(x1, y1, x2, y2) = (797.1, 426.2, 817.1, 721.8)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="817.0615220471095" y="426.17978038207417" width="20.0" height="295.6584550323551" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_2=<br/>(x1, y1, x2, y2) = (817.1, 426.2, 837.1, 721.8)<br/>(w, h) = (295.7, 20.0)<br/><hr/>(88.2, 0.0), (88.2, 20.0);<br/>(169.8, 0.0), (169.8, 20.0);<br/>(214.1, 0.0), (214.1, 20.0);<br/>(0.0, 10.0), (295.7, 10.0);");'/>
+<rect x="741.7395058090957" y="426.17978038207417" width="20" height="163.6306264255771" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_1_1=<br/>(x1, y1, x2, y2) = (741.7, 426.2, 761.7, 589.8)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(19.8, 0.0), (19.8, 20.0);<br/>(93.0, 0.0), (93.0, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="837.0615220471095" y="426.17978038207417" width="20" height="163.6306264255771" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_1_2=<br/>(x1, y1, x2, y2) = (837.1, 426.2, 857.1, 589.8)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(19.8, 0.0), (19.8, 20.0);<br/>(93.0, 0.0), (93.0, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="837.0615220471095" y="589.8104068076512" width="20.0" height="163.6306264255771" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_2_2=<br/>(x1, y1, x2, y2) = (837.1, 589.8, 857.1, 753.4)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(19.8, 0.0), (19.8, 20.0);<br/>(93.0, 0.0), (93.0, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="857.0615220471095" y="426.17978038207417" width="20.0" height="163.6306264255771" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_2_1=<br/>(x1, y1, x2, y2) = (857.1, 426.2, 877.1, 589.8)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(19.8, 0.0), (19.8, 20.0);<br/>(93.0, 0.0), (93.0, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="857.0615220471095" y="589.8104068076512" width="20" height="163.63062642557708" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_1_1=<br/>(x1, y1, x2, y2) = (857.1, 589.8, 877.1, 753.4)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(70.6, 0.0), (70.6, 20.0);<br/>(143.9, 0.0), (143.9, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="877.0615220471095" y="426.17978038207417" width="20" height="163.63062642557708" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_1_2=<br/>(x1, y1, x2, y2) = (877.1, 426.2, 897.1, 589.8)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(70.6, 0.0), (70.6, 20.0);<br/>(143.9, 0.0), (143.9, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="897.0615220471095" y="426.17978038207417" width="20.0" height="163.63062642557708" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_2_2=<br/>(x1, y1, x2, y2) = (897.1, 426.2, 917.1, 589.8)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(70.6, 0.0), (70.6, 20.0);<br/>(143.9, 0.0), (143.9, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="877.0615220471095" y="589.8104068076512" width="20.0" height="163.63062642557708" stroke="black" stoke-width="1px" fill="#ffd"
+ onmousemove='displayText("de:support_2_1=<br/>(x1, y1, x2, y2) = (877.1, 589.8, 897.1, 753.4)<br/>(w, h) = (163.6, 20.0)<br/><hr/>(70.6, 0.0), (70.6, 20.0);<br/>(143.9, 0.0), (143.9, 20.0);<br/>(0.0, 10.0), (163.6, 10.0);");'/>
+<rect x="917.0615220471095" y="426.17978038207417" width="10.0" height="219.58374917543213" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_1<br/>(x1, y1, x2, y2) = (917.1, 426.2, 927.1, 645.8)<br/>(w, h) = (10.0, 219.6)<br/><hr/>");'/>
+<rect x="766.5861608152914" y="426.17978038207417" width="10.0" height="219.58374917543213" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_1<br/>(x1, y1, x2, y2) = (766.6, 426.2, 776.6, 645.8)<br/>(w, h) = (10.0, 219.6)<br/><hr/>");'/>
+<rect x="0" y="757.3435564054313" width="219.5837491754321" height="10.0" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_2<br/>(x1, y1, x2, y2) = (0.0, 757.3, 219.6, 767.3)<br/>(w, h) = (10.0, 219.6)<br/><hr/>");'/>
+<rect x="219.5837491754321" y="757.3435564054313" width="219.5837491754321" height="10.0" stroke="black" stoke-width="1px" fill="#fff"
+ onmousemove='displayText("side_beam_2<br/>(x1, y1, x2, y2) = (219.6, 757.3, 439.2, 767.3)<br/>(w, h) = (10.0, 219.6)<br/><hr/>");'/>
+<polyline points="927.3505703015934,87.27803617699026 0.0,87.27803617699026" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="927.3505703015934,135.7416905092339 0.0,135.7416905092339" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="84.2204116371919,426.17978038207417 84.2204116371919,645.7635295575063" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="130.40832676347236,426.17978038207417 130.40832676347236,645.7635295575063" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="298.84915003785613,426.17978038207417 298.84915003785613,645.7635295575062" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="345.0370651641366,426.17978038207417 345.0370651641366,645.7635295575062" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,16.301782870104617 927.3505703015934,16.301782870104617" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,84.97998543022187 927.3505703015934,84.97998543022187" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,173.56001227814687 927.3505703015934,173.56001227814687" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,242.23821483826413 927.3505703015934,242.23821483826413" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,274.84178057847333 927.3505703015934,274.84178057847333" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,343.5199831385906 927.3505703015934,343.5199831385906" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,432.1000099865156 927.3505703015934,432.1000099865156" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,500.77821254663286 927.3505703015934,500.77821254663286" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="439.1674983508642,702.2381139102592 439.1674983508642,609.3398340779241 521.272163966971,632.3157265632909 521.272163966971,679.2622214248925 439.1674983508642,702.2381139102592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="521.272163966971,679.2622214248925 521.272163966971,772.1605012572275 439.1674983508642,749.1846087718607 439.1674983508642,702.2381139102592 521.272163966971,679.2622214248925" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="521.272163966971,702.2381139102592 521.272163966971,609.3398340779241 603.3768295830778,632.3157265632909 603.3768295830778,679.2622214248925 521.272163966971,702.2381139102592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="603.3768295830778,679.2622214248925 603.3768295830778,772.1605012572275 521.272163966971,749.1846087718607 521.272163966971,702.2381139102592 603.3768295830778,679.2622214248925" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="995.5848955894563,0.0 995.5848955894563,401.32803738021084" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="1007.5671319252689,401.32803738021084 1007.5671319252689,802.6560747604217" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="684.4814951991846,701.0789874180542 607.5189839350744,701.0789874180542 684.4814951991846,679.542058049437 684.4814951991846,701.0789874180542" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="684.4814951991846,610.4989605701292 684.4814951991846,632.0358899387464 607.5189839350742,610.4989605701292 684.4814951991846,610.4989605701292" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="603.3768295830778,702.2381139102592 603.3768295830778,609.3398340779241 685.4814951991846,632.3157265632909 685.4814951991846,679.2622214248925 603.3768295830778,702.2381139102592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="741.7395058090957,599.1846610328441 648.8412259767606,599.1846610328441 671.8171184621274,517.0799954167375 718.7636133237289,517.0799954167375 741.7395058090957,599.1846610328441" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="741.7395058090957,508.2844459981809 648.8412259767606,508.2844459981809 671.8171184621274,426.17978038207417 718.7636133237289,426.17978038207417 741.7395058090957,508.2844459981809" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#dff" />
+<polyline points="740.5803793168907,427.17978038207417 740.5803793168907,504.1422916461844 719.0434499482734,427.17978038207417 740.5803793168907,427.17978038207417" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="650.0003524689656,427.17978038207417 671.5372818375829,427.17978038207417 650.0003524689656,504.1422916461844 650.0003524689656,427.17978038207417" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="766.0861608152914,690.2646878807691 689.1236495511812,690.2646878807691 766.0861608152914,668.7277585121519 766.0861608152914,690.2646878807691" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="766.0861608152914,599.6846610328441 766.0861608152914,621.2215904014614 689.123649551181,599.6846610328441 766.0861608152914,599.6846610328441" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="685.4814951991846,690.7646878807691 685.4814951991846,599.1846610328441 766.5861608152914,621.8807168936664 766.5861608152914,668.0686320199469 685.4814951991846,690.7646878807691" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="777.0615220471095,771.8693534968759 685.4814951991846,771.8693534968759 708.1775510600069,690.7646878807691 754.3654661862873,690.7646878807691 777.0615220471095,771.8693534968759" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="776.5615220471095,691.2646878807691 776.5615220471095,768.2271991448793 755.0245926784924,691.2646878807691 776.5615220471095,691.2646878807691" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="685.9814951991846,691.2646878807691 707.5184245678018,691.2646878807691 685.9814951991846,768.2271991448794 685.9814951991846,691.2646878807691" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="#ffd" />
+<polyline points="947.3505703015934,605.3116596842608 927.3505703015934,605.3116596842608" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="947.3505703015934,686.8944937673942 927.3505703015934,686.8944937673942" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="947.3505703015934,731.1556163659592 927.3505703015934,731.1556163659592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="937.3505703015934,517.0799954167375 937.3505703015934,812.7384504490926" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="967.3505703015934,605.3116596842608 947.3505703015934,605.3116596842608" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="967.3505703015934,686.8944937673942 947.3505703015934,686.8944937673942" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="967.3505703015934,731.1556163659592 947.3505703015934,731.1556163659592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="957.3505703015934,517.0799954167375 957.3505703015934,812.7384504490926" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,605.3116596842608 967.3505703015934,605.3116596842608" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,686.8944937673942 967.3505703015934,686.8944937673942" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="987.3505703015934,731.1556163659592 967.3505703015934,731.1556163659592" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="977.3505703015934,517.0799954167375 977.3505703015934,812.7384504490926" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="88.2316642675234,782.1605012572275 88.2316642675234,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="169.81449835065678,782.1605012572275 169.81449835065678,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="214.07562094922173,782.1605012572275 214.07562094922173,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="0.0,792.1605012572275 295.6584550323551,792.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="383.8901192998785,782.1605012572275 383.8901192998785,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="465.4729533830119,782.1605012572275 465.4729533830119,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="509.73407598157684,782.1605012572275 509.73407598157684,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="295.6584550323551,792.1605012572275 591.3169100647102,792.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="679.5485743322336,782.1605012572275 679.5485743322336,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="761.131408415367,782.1605012572275 761.131408415367,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="805.392531013932,782.1605012572275 805.392531013932,802.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="591.3169100647102,792.1605012572275 886.9753650970654,792.1605012572275" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="797.0615220471095,514.4114446495976 777.0615220471095,514.4114446495976" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="797.0615220471095,595.9942787327309 777.0615220471095,595.9942787327309" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="797.0615220471095,640.2554013312958 777.0615220471095,640.2554013312958" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="787.0615220471095,426.17978038207417 787.0615220471095,721.8382354144293" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="817.0615220471095,514.4114446495976 797.0615220471095,514.4114446495976" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="817.0615220471095,595.9942787327309 797.0615220471095,595.9942787327309" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="817.0615220471095,640.2554013312958 797.0615220471095,640.2554013312958" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="807.0615220471095,426.17978038207417 807.0615220471095,721.8382354144293" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="837.0615220471095,514.4114446495976 817.0615220471095,514.4114446495976" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="837.0615220471095,595.9942787327309 817.0615220471095,595.9942787327309" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="837.0615220471095,640.2554013312958 817.0615220471095,640.2554013312958" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="827.0615220471095,426.17978038207417 827.0615220471095,721.8382354144293" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="761.7395058090957,445.9316549526956 741.7395058090957,445.9316549526956" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="761.7395058090957,519.2268132456156 741.7395058090957,519.2268132456156" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="751.7395058090957,426.17978038207417 751.7395058090957,589.8104068076512" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="857.0615220471095,445.9316549526956 837.0615220471095,445.9316549526956" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="857.0615220471095,519.2268132456156 837.0615220471095,519.2268132456156" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="847.0615220471095,426.17978038207417 847.0615220471095,589.8104068076512" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="857.0615220471095,609.5622813782727 837.0615220471095,609.5622813782727" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="857.0615220471095,682.8574396711928 837.0615220471095,682.8574396711928" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="847.0615220471095,589.8104068076512 847.0615220471095,753.4410332332284" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="877.0615220471095,445.9316549526956 857.0615220471095,445.9316549526956" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="877.0615220471095,519.2268132456156 857.0615220471095,519.2268132456156" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="867.0615220471095,426.17978038207417 867.0615220471095,589.8104068076512" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="877.0615220471095,660.3940003696869 857.0615220471095,660.3940003696869" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="877.0615220471095,733.6891586626068 857.0615220471095,733.6891586626068" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="867.0615220471095,589.8104068076512 867.0615220471095,753.4410332332284" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="897.0615220471095,496.7633739441098 877.0615220471095,496.7633739441098" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="897.0615220471095,570.0585322370298 877.0615220471095,570.0585322370298" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="887.0615220471095,426.17978038207417 887.0615220471095,589.8104068076512" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="917.0615220471095,496.7633739441098 897.0615220471095,496.7633739441098" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="917.0615220471095,570.0585322370298 897.0615220471095,570.0585322370298" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="907.0615220471095,426.17978038207417 907.0615220471095,589.8104068076512" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="897.0615220471095,660.3940003696869 877.0615220471095,660.3940003696869" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="897.0615220471095,733.6891586626068 877.0615220471095,733.6891586626068" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<polyline points="887.0615220471095,589.8104068076512 887.0615220471095,753.4410332332284" style="pointer-events:none;" stroke="gray" stroke-width="0.5" stroke-dasharray="2" fill="none" />
+<text x="508.0" y="-402.5" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,508.0,-406.5)"></text>
+<text x="463.6752851507967" y="-107.50986334311207" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,463.6752851507967,-111.50986334311207)">central_beam</text>
+<text x="463.6752851507967" y="-274.8097401101866" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,463.6752851507967,-278.8097401101866)">central_beam</text>
+<text x="463.6752851507967" y="-376.38976695811164" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,463.6752851507967,-380.38976695811164)">central_beam</text>
+<text x="107.31436920033212" y="-531.9716549697903" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,107.31436920033212,-535.9716549697903)">side_beam_1</text>
+<text x="321.94310760099637" y="-531.9716549697903" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,321.94310760099637,-535.9716549697903)">side_beam_2</text>
+<text x="109.79187458771607" y="-697.5535429814688" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,109.79187458771607,-701.5535429814688)">side_beam_1</text>
+<text x="329.37562376314816" y="-697.5535429814687" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,329.37562376314816,-701.5535429814687)">side_beam_2</text>
+<text x="539.0493513890445" y="-467.96979380603665" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,539.0493513890445,-471.96979380603665)">side_beam_1</text>
+<text x="539.0493513890445" y="-559.5498206539617" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,539.0493513890445,-563.5498206539617)">side_beam_2</text>
+<text x="957.3505703015934" y="-125.26999885418437" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,957.3505703015934,-129.26999885418437)">support_1</text>
+<text x="957.3505703015934" y="-383.8099965625531" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,957.3505703015934,-387.8099965625531)">support_2</text>
+<text x="480.2198311589176" y="-694.7501676675759" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,480.2198311589176,-690.7501676675759)">d:d2_1</text>
+<text x="480.2198311589176" y="-678.7501676675759" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,480.2198311589176,-690.7501676675759)">d:d2_2</text>
+<text x="562.3244967750244" y="-694.7501676675759" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,562.3244967750244,-690.7501676675759)">d:d3_1</text>
+<text x="562.3244967750244" y="-678.7501676675759" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,562.3244967750244,-690.7501676675759)">d:d3_2</text>
+<text x="1001.5760137573626" y="-196.66401869010542" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,1001.5760137573626,-200.66401869010542)">mid_strengthen</text>
+<text x="1001.5760137573626" y="-597.9920560703163" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,1001.5760137573626,-601.9920560703163)">mid_strengthen</text>
+<text x="463.6752851507967" y="-803.6560747604217" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,463.6752851507967,-807.6560747604217)">central_beam</text>
+<text x="463.6752851507967" y="-773.1605012572275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,463.6752851507967,-777.1605012572275)">central_beam</text>
+<text x="644.4291623911312" y="-659.7889739940916" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,644.4291623911312,-655.7889739940916)">de:support_1_2</text>
+<text x="644.4291623911312" y="-643.7889739940916" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,644.4291623911312,-655.7889739940916)">d:d1_1</text>
+<text x="695.2903658929281" y="-554.1323282247909" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,695.2903658929281,-558.1323282247909)">d:d4</text>
+<text x="695.2903658929281" y="-471.2321131901275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,695.2903658929281,-467.2321131901275)">d:d1_2</text>
+<text x="695.2903658929281" y="-455.2321131901275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,695.2903658929281,-467.2321131901275)">de:support_2_2</text>
+<text x="726.033828007238" y="-648.9746744568066" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,726.033828007238,-644.9746744568066)">de:support_1_1</text>
+<text x="726.033828007238" y="-632.9746744568066" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,726.033828007238,-644.9746744568066)">de:support_1</text>
+<text x="731.271508623147" y="-735.3170206888225" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,731.271508623147,-731.3170206888225)">de:support_2</text>
+<text x="731.271508623147" y="-719.3170206888225" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,731.271508623147,-731.3170206888225)">de:support_2_1</text>
+<text x="937.3505703015934" y="-660.909222932915" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,937.3505703015934,-664.909222932915)">de:support_1=</text>
+<text x="957.3505703015934" y="-660.909222932915" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,957.3505703015934,-664.909222932915)">d:d1_1=</text>
+<text x="977.3505703015934" y="-660.909222932915" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,977.3505703015934,-664.909222932915)">d:d2_1=</text>
+<text x="147.82922751617755" y="-788.1605012572275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,147.82922751617755,-792.1605012572275)">d:d3_1=</text>
+<text x="443.4876825485327" y="-788.1605012572275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,443.4876825485327,-792.1605012572275)">d:d4=</text>
+<text x="739.1461375808877" y="-788.1605012572275" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,739.1461375808877,-792.1605012572275)">d:d3_2=</text>
+<text x="787.0615220471095" y="-570.0090078982518" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,787.0615220471095,-574.0090078982518)">d:d2_2=</text>
+<text x="807.0615220471095" y="-570.0090078982518" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,807.0615220471095,-574.0090078982518)">d:d1_2=</text>
+<text x="827.0615220471095" y="-570.0090078982518" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,827.0615220471095,-574.0090078982518)">de:support_2=</text>
+<text x="751.7395058090957" y="-503.99509359486274" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,751.7395058090957,-507.99509359486274)">de:support_1_1=</text>
+<text x="847.0615220471095" y="-503.99509359486274" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,847.0615220471095,-507.99509359486274)">de:support_1_2=</text>
+<text x="847.0615220471095" y="-667.6257200204398" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,847.0615220471095,-671.6257200204398)">de:support_2_2=</text>
+<text x="867.0615220471095" y="-503.99509359486274" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,867.0615220471095,-507.99509359486274)">de:support_2_1=</text>
+<text x="867.0615220471095" y="-667.6257200204398" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,867.0615220471095,-671.6257200204398)">de:support_1_1=</text>
+<text x="887.0615220471095" y="-503.99509359486274" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,887.0615220471095,-507.99509359486274)">de:support_1_2=</text>
+<text x="907.0615220471095" y="-503.99509359486274" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,907.0615220471095,-507.99509359486274)">de:support_2_2=</text>
+<text x="887.0615220471095" y="-667.6257200204398" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,887.0615220471095,-671.6257200204398)">de:support_2_1=</text>
+<text x="922.0615220471095" y="-531.9716549697903" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,922.0615220471095,-535.9716549697903)">side_beam_1</text>
+<text x="771.5861608152914" y="-531.9716549697903" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(-90,771.5861608152914,-535.9716549697903)">side_beam_1</text>
+<text x="109.79187458771605" y="-758.3435564054313" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,109.79187458771605,-762.3435564054313)">side_beam_2</text>
+<text x="329.37562376314816" y="-758.3435564054313" text-anchor="middle" style="pointer-events:none;" transform="scale(1,-1) rotate(0,329.37562376314816,-762.3435564054313)">side_beam_2</text>
+</g>
+</svg></div>
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+</body>
+</html>

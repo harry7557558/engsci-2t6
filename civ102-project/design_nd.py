@@ -14,31 +14,27 @@ def mix(a, b, t):
 # strengthen middle edges @mel, @met, @mes, length, top width, side width
 
 # Trapezoid body: folded
-# Trapezoid top: folded, or glue the edges (10mm padding)
-GLUE_EDGE = True
+# Trapezoid top: glue the edges (10mm padding)
 # Diaphragms: glue the edges
 
 C = __import__('beam_analysis').LENGTH/2
-E11, E12, E21, E22 = 10, 30, 50, 70
+E11, E12, E21, E22 = 0, 20, 40, 60
 EC = 0.5*(E12+E21)
-D1 = mix(EC, 2*C-EC, 0.16)
-D2 = mix(EC, 2*C-EC, 0.38)
 
-# six diaphragms
-# two at the ends, four uniformly spaced
+# 7+2 diaphragms
 
 
 def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes):
     # geometry constraints
     if not min(wt, wb, h, cl, mel, met, mes) > 0:
         return None
-    if wt < (90 if GLUE_EDGE else 100):  # top must hold the train
+    if wt < 90:  # top must hold the train
         return None
     if wb < 20 or h > 200:  # hard constraints
         return None
     if mel > C:  # these can't be higher than half of the bridge length
         return None
-    if 2*met > wt or met < 10:  # no overlapping?
+    if 2*met > wt:  # no overlapping?
         return None
     if cl > 2*C:  # must not longer than bridge
         return None
@@ -51,17 +47,10 @@ def calc_cross_section(wt, wb, h, sl, cl, mel, met, mes):
         return None
     if wt < wb:  # force bottom large trapezoid
         return None
-    if cl < 2*C-2*D1:  # optional, put all diaphragms in the middle span
-        return None
     # beam cross sections
     offset = 1.5
-    if GLUE_EDGE:
-        tm = csm.trapezoid_glue_edge_2(wt, wb, h)
-        #ts = csm.trapezoid_glue_edge_1(wt, wb, h)
-        ts = csm.trapezoid_glue_edge_2(wt, wb, h)
-    else:
-        tm = csm.trapezoid(wt, wb, h)
-        ts = csm.trapezoid(wt, wb, h)
+    tm = csm.trapezoid_glue_edge_2(wt, wb, h)
+    ts = csm.trapezoid_glue_edge_2(wt, wb, h)
     sp = csm.trapezoid_rect_support(wt, wb, h)
     tes = csm.trapezoid_edge_strengthen(wt, wb, h, met, mes)
     tws = csm.trapezoid_wall_strengthen(wt, wb, h)
@@ -93,36 +82,42 @@ def calc_diaphragms(wt, wb, h, sl, cl, mel, met, mes):
         thin plate buckling load 4π²E / 12(1-μ²) * (1.27mm/100mm)² = 2.21 MPa
         shear buckling load 5π²E / 12(1-μ²) * ((1.27mm/100mm)² + (1.27mm/100mm)²) = 5.53 MPa
         single layer of matboard is enough for resisting buckling
-        at the end: 274N / (2*50mm*1.27mm) = 2.16 MPa (might be an issue)
     """
+    D1 = mix(EC, 2*C-EC, 0.14)
+    D2 = mix(EC, 2*C-EC, 0.3)
+    D3 = mix(EC, 2*C-EC, 0.4)
+    D4 = mix(EC, 2*C-EC, 0.5)
+    D1 = sl+10
+    D2 = C-0.5*mel-10
+    if D2-D1 < 20:
+        return None
     offset = 1.0
     cs = csm.trapezoid_nowrap(wt, wb, h)
     sp = csm.trapezoid_rect_support_diaphragm(wt, wb, h)
     res = [
+        ba.BridgeCrossSection('de:support_1%a', *cs, E12, E21, 0),
         ba.BridgeCrossSection('de:support_1_1%a', *sp, E11, E12, -0.5*offset),
-        ba.BridgeCrossSection('de:support_1_2%b', *sp, E21, E22, -0.5*offset),
-        ba.BridgeCrossSection('d:support_1%a', *cs, E12, E21, 0),
-        ba.BridgeCrossSection('de:support_2_1%c', *sp, 2*C-E12, 2*C-E11, -0.5*offset),
+        ba.BridgeCrossSection('de:support_1_2%c', *sp, E21, E22, -0.5*offset),
+        ba.BridgeCrossSection('de:support_2%b', *cs, 2*C-E21, 2*C-E12, 0),
+        ba.BridgeCrossSection('de:support_2_1%b', *sp, 2*C-E12, 2*C-E11, -0.5*offset),
         ba.BridgeCrossSection('de:support_2_2%d', *sp, 2*C-E22, 2*C-E21, -0.5*offset),
-        ba.BridgeCrossSection('d:support_2%b', *cs, 2*C-E21, 2*C-E12, 0),
         ba.BridgeCrossSection('d:d1_1%c', *cs, D1-10, D1+10, 0.5*offset),
         ba.BridgeCrossSection('d:d1_2%d', *cs, 2*C-D1-10, 2*C-D1+10, 0.5*offset),
-        ba.BridgeCrossSection('d:d2_1', *cs, D2-10, D2+10, 0.5*offset),
-        ba.BridgeCrossSection('d:d2_2', *cs, 2*C-D2-10, 2*C-D2+10, 0.5*offset),
+        ba.BridgeCrossSection('d:d2_1%%e', *cs, D2-10, D2+10, 0.5*offset),
+        ba.BridgeCrossSection('d:d2_2%%e', *cs, 2*C-D2-10, 2*C-D2+10, 0.5*offset),
+        ba.BridgeCrossSection('d:d3_1%%f', *cs, D3-10, D3+10, 0.5*offset),
+        ba.BridgeCrossSection('d:d3_2%%f', *cs, 2*C-D3-10, 2*C-D3+10, 0.5*offset),
+        ba.BridgeCrossSection('d:d4', *cs, D4-10, D4+10, 0.5*offset),
     ]
     return res
 
 
 if __name__ == "__main__":
 
-    if GLUE_EDGE:  # FoS = 2.53
-        initial_params = [91, 30, 65, 180, 990, 500, 20, 15]
-        initial_params = [90.27670975496106, 28.497081352430108, 83.70282958637046, 197.85696889711943, 1005.6537386401361, 568.2762296922637, 35.328454803561115, 9.2141692024721]
-    else:  # not trustworthy
-        initial_params = [101, 30, 65, 400, 600, 600, 20, 20]
-        initial_params = [100.82165954525692, 64.36032702165264, 90.4114510065952, 652.6591967573131, 70.57551660710013, 41.45188009721109, 1.939084293269092, 85.55489634215272]
+    # FoS = 2.40
+    initial_params = [91, 30, 65, 180, 990, 500, 20, 15]
+    initial_params = [91.580026847925, 46.18791512628046, 81.10466561610673, 219.58374917543213, 927.3505703015933, 401.3280373802108, 20.216561623675524, 8.234325287862875]
 
-    #initial_params = [100, 40, 100, 180, 1000, 500, 20, 15]  # invalid
     bridge = ba.Bridge(
         calc_cross_section, calc_diaphragms,
         [[75, 150], [20, 100], [20, 100],
@@ -138,7 +133,7 @@ if __name__ == "__main__":
     #bridge.analyze(bridge.params, plot=True)
     #bridge.plot_3d(zoom=1.5)
 
-    description_ge = """
+    description = """
 <p>
 The bridge design consists of three segments symmetrical about the middle span.
 The middle one is thicker than the two at the sides due to glue joints.
@@ -160,6 +155,14 @@ These parts are mainly subjected to compression and are less likely to fail due 
 Intuitively, folding tabs involves deforming the matboard, making it more likely to buckle.
 </p>
 <p>
+This bridge design has 7 diaphragms in the middle span.
+Since the analysis shows shear buckling is not the main cause of the bridge's failure,
+we consider there is no need for extra diaphragms at the ends.
+The cross section of the middle of the bridge will likely shrink vertically due to bending moment
+and therefore have a decreased second moment of area.
+Diaphragms are placed in the middle to resist such deformation.
+</p>
+<p>
 Analysis based on the CIV102 course shows the bridge will first fail due to compression in the midspan.
 However, intuition tells us the glue joint between beam segments may be the weakest part.
 The bridge may also crush at the ends due to reaction force.
@@ -168,7 +171,7 @@ The bridge may also crush at the ends due to reaction force.
 
     export_bridge(
         bridge,
-        "design_s2_ge" if GLUE_EDGE else "design_s2_fold",
-        [100, 300, 600] if GLUE_EDGE else [],
-        description_ge if GLUE_EDGE else ""
+        "design_nd",
+        [100, 300, 600],
+        description
     )

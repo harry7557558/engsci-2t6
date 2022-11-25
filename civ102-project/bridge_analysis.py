@@ -7,7 +7,7 @@ import beam_analysis
 import cross_section_analysis as csa
 
 
-# if this is set to True, use different FoS for different failure modes
+# if this is True, use different FoS for different failure modes
 VARYING_FOS = False
 
 
@@ -18,6 +18,25 @@ from rectpack import newPacker  # https://github.com/secnot/rectpack
 LENGTH = beam_analysis.LENGTH  # beam length
 MATBOARD_W = 1016
 MATBOARD_H = 813
+
+
+def is_diaphragm_label(label):
+    if label.endswith('='):
+        return False
+    if '%' in label:
+        return True
+    return label.startswith('d:') or label.startswith('de:')
+
+def plot_rect_color(label):
+    if label in ['matboard', '']:
+        return '#ccc'
+    if 'support' in label:
+        return '#ffd'
+    if '%' in label:
+        return '#fef'
+    if label.startswith('d:'):
+        return '#dff'
+    return '#fff'
 
 def pack_rect(rects, labels=None, ax=None):
     packer = newPacker()
@@ -33,17 +52,11 @@ def pack_rect(rects, labels=None, ax=None):
     if len(abin) < len(rects):
         return False
     if ax is not None:  # plot
+        assert len(rects) == len(labels)
         def plot_rect(x, y, w, h, fmt='-', label=''):
             xs = [x, x+w, x+w, x, x]
             ys = [y, y, y+h, y+h, y]
-            if label == 'matboard':
-                ax.fill(xs, ys, '#ccc')
-            elif 'support' in label:
-                ax.fill(xs, ys, '#ffd')
-            elif label.startswith('d:'):
-                ax.fill(xs, ys, '#dff')
-            else:
-                ax.fill(xs, ys, '#fff')
+            ax.fill(xs, ys, plot_rect_color(label))
             ax.plot(xs, ys, fmt)
         plot_rect(0, 0, MATBOARD_W, MATBOARD_H, 'k-', label='matboard')
         legend = ['matboard']
@@ -76,8 +89,8 @@ def get_max_bend(x0, x1):
 
 class BridgeCrossSection:
 
-    def __init__(self, label, parts, glues, x0, x1, offset=0.0):
-        assert x0 < x1
+    def __init__(self, label, parts, glues=[], x0=None, x1=None, offset=0.0):
+        assert (x0 is None and x1 is None) or x0 < x1
         self.solved = False
         self.label = label
         self.x0 = x0
@@ -93,6 +106,8 @@ class BridgeCrossSection:
             self.parts_offset = [part[:] for part in self.parts]
         self.glues = [[np.array(p) for p in glue] for glue in glues]
         if len(parts) == 0:
+            return
+        if x0 is None and x1 is None:
             return
         self.perimeter, (self.xc, self.yc), (self.Ix, self.I) \
                         = csa.calc_geometry(self.parts)
@@ -122,11 +137,32 @@ class BridgeCrossSection:
             res.append((peri, self.x1-self.x0))
         return res
 
+    def get_folds(self):
+        res = []
+        for part in self.parts_offset:
+            fold = []
+            width = self.x1-self.x0
+            peri = 0
+            for (p1, p2) in zip(part[:-1], part[1:]):
+                peri += np.linalg.norm(p2-p1)
+                fold.append([
+                    np.array([peri, 0]),
+                    np.array([peri, width])
+                ])
+            fold = fold[:-1]
+            if self.label.endswith('='):
+                fold.append([
+                    np.array([0, 0.5*width]),
+                    np.array([peri, 0.5*width])
+                ])
+            res.append(fold)
+        return res
+
     def assert_ccw(self):
         """make sure the points are in counter-clockwise order
             this only checks parts, not glues"""
-        for i in range(len(self.parts)):
-            part = self.parts[i][:]
+        for i in range(len(self.parts_offset)):
+            part = self.parts_offset[i][:]
             if len(part) > 2 and \
                np.linalg.norm(part[-1]-part[0]) > 1e-6:
                 part.append(part[0])
@@ -137,11 +173,53 @@ class BridgeCrossSection:
                 print(f"Assert CCW fail: {self.label} at index {i} (area={sA})")
                 assert sA > -1e-6
 
+    def assert_nointersect(self):
+        """assert each part don't intersect each other
+            assumes closed convex ccw polygons
+            assumes two polygons are not identical"""
+        # check if polygon edges intersect
+        segs = []
+        for i in range(len(self.parts_offset)):
+            part = self.parts_offset[i]
+            segs += list(zip(part[:-1], part[1:],
+                             [i]*(len(part)-1)))
+        for j in range(len(segs)):
+            for i in range(j):
+                p1, d1 = segs[i][0], segs[i][1]-segs[i][0]
+                p2, d2 = segs[j][0], segs[j][1]-segs[j][0]
+                if abs(d1[0]*d2[1]-d1[1]*d2[0]) < 1e-12:
+                    continue
+                t1, t2 = np.linalg.solve(np.transpose([d1, -d2]), p2-p1)
+                eps = 1e-6
+                if eps < t1 < 1-eps and eps < t2 < 1-eps:
+                    print(f"Polygons intersect: {self.label} at indices {segs[i][2]},{segs[j][2]}")
+                    assert False
+        # check if one polygon is inside another polygon
+        for j in range(len(self.parts_offset)):
+            for i in range(len(self.parts_offset)):
+                if i == j:
+                    continue
+                separator_found = False
+                for (p1, p2) in zip(self.parts_offset[j][:-1], self.parts_offset[j][1:]):
+                    n = np.array([p2[1]-p1[1], p1[0]-p2[0]])
+                    is_separating = True
+                    for p in self.parts_offset[i]:
+                        if n.dot(p-p1) < -1e-6:
+                            is_separating = False
+                            break
+                    if is_separating:
+                        separator_found = True
+                        break
+                if not separator_found:
+                    print(f"Polygons overlap: {self.label} at indices {i},{j}")
+                    assert False
+
     def calc_offset(self, part, o):
         """inflate the part by o(ffset) (usually matboard thickness),
             negative o -> deflation,
             assume the cross section is ccw"""
         assert len(part) >= 2
+        closed = np.linalg.norm(part[0]-part[-1])<1e-6
         # calculate normals
         normals = []
         for p1, p2 in zip(part[:-1], part[1:]):
@@ -171,7 +249,7 @@ class BridgeCrossSection:
             t1, t2 = np.linalg.solve(np.transpose([d1, -d2]),
                                      part[-1] - part[0])
             eps = 1e-6
-            if -eps < t1 < 1+eps and -eps < t2 < 1+eps:
+            if closed or (-eps < t1 < 1+eps and -eps < t2 < 1+eps):
                 part[0] += d1 * t1
                 part[-1] += d2 * t2
         return part
@@ -221,7 +299,67 @@ class Bridge:
         self.param_labels = param_labels
         self.params = initial_params[:]
 
+    @staticmethod
+    def merge_diaphragms(diaphragms, return_marks=False):
+        """For calculating bounding rectangle"""
+        merged = {}
+        for d in diaphragms:
+            if '%' not in d.label:
+                assert d.label not in merged
+                merged[d.label] = [d]
+                continue
+            mi = d.label[d.label.find('%'):]
+            if mi not in merged:
+                merged[mi] = []
+            merged[mi].append(d)
+        res = []
+        marks = []
+        labels = []
+        for (mi, ds) in merged.items():
+            labels.append('\n'.join(sum([
+                [d.label[:(d.label+'%').find('%')]]*len(d.parts_offset)
+                for d in ds], [])))
+            if '%%' not in mi:
+                parts = sum([d.parts_offset for d in ds], [])
+                res.append(BridgeCrossSection(mi, parts))
+                if return_marks:
+                    ps = sum(parts, [])
+                    minx = min([p[0] for p in ps])
+                    miny = min([p[1] for p in ps])
+                    dp = -np.array([minx, miny])
+                    marks.append([[p+dp for p in part] for part in parts])
+                continue
+            # assume congruent trapezoids with the same orientation
+            parts = []
+            markst = []
+            for i in range(len(ds)):
+                assert len(ds[i].parts_offset) == 1
+                ps = [p[:] for p in ds[i].parts_offset[0]]
+                minx = min([p[0] for p in ps])
+                miny = min([p[1] for p in ps])
+                maxy = max([p[1] for p in ps])
+                ps = [p-[minx, miny] for p in ps]
+                maxy -= miny
+                if i == 0:
+                    parts.append(ps)
+                    markst.append(ps)
+                    continue
+                if i % 2 == 1:  # turn it upside down
+                    maxx = max([p[0] for p in ps])
+                    ps = [[maxx,maxy]-p for p in ps]
+                x0 = sorted(set([p[0] for p in parts[-1]]), reverse=True)[1]  # second largest x
+                dp = np.array([x0, 0])
+                ps = [p+dp for p in ps]
+                parts.append(ps)
+                markst.append(ps)
+            res.append(BridgeCrossSection(mi, parts))
+            marks.append(markst)
+        if return_marks:
+            return res, marks, labels
+        return res
+
     def assert_ccw(self):
+        # CCW assertion
         cross_sections = self.calc_cross_section(*self.params)
         if cross_sections is None:
             print("`assert_ccw`: Cross section constraint violation.")
@@ -234,6 +372,10 @@ class Bridge:
             diaphragms = []
         for d in diaphragms:
             d.assert_ccw()
+        # non-intersecting assertion
+        merged = self.merge_diaphragms(diaphragms)
+        for mcs in merged:
+            mcs.assert_nointersect()
 
     def calc_glues(self, cross_sections):
         """Calculate glue joints 
@@ -259,6 +401,27 @@ class Bridge:
                 res.append(cs)
         return res
 
+    @staticmethod
+    def generate_rects(cross_sections, diaphragms,
+                       require_labels: bool, require_marks=False):
+        merged = Bridge.merge_diaphragms(diaphragms, require_marks)
+        if require_marks:
+            merged, merged_marks, merged_labels = merged
+        rects = sum([cs.get_rects() for cs in cross_sections], []) + \
+                [csa.cross_section_range(m.parts_offset, True) for m in merged]
+        if not require_labels:
+            return rects
+        labels = sum([[cs.label[:(cs.label+'%').find('%')]]*len(cs.parts_offset)
+                      for cs in cross_sections], []) + \
+                 (merged_labels if require_marks else [m.label for m in merged])
+        if not require_marks:
+            assert len(rects) == len(labels)
+            return rects, labels
+        folds = sum([cs.get_folds() for cs in cross_sections], []) + \
+                merged_marks
+        assert len(labels) == len(folds)
+        return rects, labels, folds
+
     def analyze(self, params, plot=False, show=True):
         cross_sections = self.calc_cross_section(*params)
         if cross_sections is None:
@@ -275,9 +438,8 @@ class Bridge:
         for d in diaphragms:
             c = 0.5*(d.x0+d.x1)
             cross_sections += [
-                #BridgeCrossSection(d.label, d.parts, d.glues, d.x0, c, offset=-csa.LINDEN_M),
-                #BridgeCrossSection(d.label, d.parts, d.glues, c, d.x1, offset=-csa.LINDEN_M),
-                BridgeCrossSection(d.label, d.parts, d.glues, d.x0, d.x1, offset=-csa.LINDEN_M),
+                BridgeCrossSection(d.label[:(d.label+'%').find('%')]+'=',
+                                   d.parts, d.glues, d.x0, d.x1, offset=-csa.LINDEN_M),
             ]
             diaphragms_cs.append(c)
         diaphragms_cs.sort()
@@ -288,8 +450,7 @@ class Bridge:
             if plot:
                 print("Area too large.")
             return -1
-        rects = sum([cs.get_rects() for cs in cross_sections], []) + \
-                sum([csa.cross_section_range(d.parts_offset) for d in diaphragms], [])
+        rects = self.generate_rects(cross_sections, diaphragms, False)
         if not pack_rect(rects):
             if plot:
                 print("Can't pack into matboard.")
@@ -297,6 +458,16 @@ class Bridge:
 
         # glue joints
         glues = self.calc_glues(cross_sections)
+        flexshear_keypoints = []
+        for cs in cross_sections:
+            if 'beam' in cs.label:
+                flexshear_keypoints += [
+                    (cs.x0, cs.x1),
+                    (cs.x1, cs.x0)
+                ]
+        flexshear_keypoints.sort(key=lambda p: p[0])
+        flexshear_keypoints = dict(flexshear_keypoints)
+        assert len(flexshear_keypoints) % 2 == 0
 
         # divide into sections
         xs = diaphragms_cs[:]
@@ -312,6 +483,7 @@ class Bridge:
 
         # for each cross section
         min_fos = float('inf')
+        has_flexshear = 0
         for (x0, x1) in zip(xs[:-1], xs[1:]):
             
             # bending moment and shear
@@ -336,28 +508,30 @@ class Bridge:
             
             # shear at glue joints due to flexual stress
             fos_flexshear = float('inf')
-            peri, (xc, yc), (Ix, I) = csa.calc_geometry(parts)
-            glue_to_check = []
-            glue_area = 0.0
-            for glue in glues:
-                if glue.label == False:
-                    continue
-                if not glue.x0 <= x0 < x1 <= glue.x1:
-                    assert x0 >= glue.x1 or x1 <= glue.x0
-                    continue
-                glue_to_check.append(glue)
-                dx = csa.cross_section_range(glue.glues)
-                glue_area += (glue.x1-glue.x0)*sum([d[0] for d in dx])
-            for glue in glue_to_check:
-                for (p1, p2) in glue.glues:
-                    maxy = max(abs(p1[1]-yc), abs(p2[1]-yc))
-                    dFdl = csa.BM_MAX*maxy/I * csa.LINDEN_M
-                    h = dFdl / (glue.x1-glue.x0)  # failure stress for flexural shear
-                    tf = 400/glue_area  # tension??
-                    if x1-x0 < 20.0:
-                        tf = 0.0  # a cheap way to filter out unwanted
-                    fos_flexshear = min(fos_flexshear,
-                                        csa.SHEAR_C/np.hypot(h, tf))
+            if x0 in flexshear_keypoints:
+                fx0, fx1 = x0, flexshear_keypoints[x0]
+                has_flexshear += np.sign(fx1-fx0)
+            if has_flexshear >= 2:
+                peri, (xc, yc), (Ix, I) = csa.calc_geometry(parts)
+                glue_to_check = []
+                glue_area = 0.0
+                for glue in glues:
+                    if glue.label == False:
+                        continue
+                    if not glue.x0 <= x0 < x1 <= glue.x1:
+                        assert x0 >= glue.x1 or x1 <= glue.x0
+                        continue
+                    glue_to_check.append(glue)
+                    dx = csa.cross_section_range(glue.glues)
+                    glue_area += (glue.x1-glue.x0)*sum([d[0] for d in dx])
+                for glue in glue_to_check:
+                    for (p1, p2) in glue.glues:
+                        maxy = max(abs(p1[1]-yc), abs(p2[1]-yc))
+                        dFdl = csa.BM_MAX*maxy/I * csa.LINDEN_M
+                        h = dFdl / (glue.x1-glue.x0)  # failure stress for flexural shear
+                        tf = 400/glue_area  # tension??
+                        fos_flexshear = min(fos_flexshear,
+                                            csa.SHEAR_C/np.hypot(h, tf))
 
             # apply
             if VARYING_FOS:  # varying FoS for each type
@@ -401,10 +575,7 @@ class Bridge:
             ax1.plot(cs_x, one/cs_shear_buckle, label="shear buckle fos⁻¹")
             ax1.plot(cs_x, one/cs_flexshear, label="flex shear fos⁻¹")
             ax1.legend()
-            rects = sum([cs.get_rects() for cs in cross_sections], []) + \
-                    sum([csa.cross_section_range(d.parts_offset) for d in diaphragms], [])
-            labels = sum([[cs.label]*len(cs.parts_offset) for cs in cross_sections], []) + \
-                     sum([[d.label]*len(d.parts_offset) for d in diaphragms], [])
+            rects, labels = self.generate_rects(cross_sections, diaphragms, True)
             pack_rect(rects, labels, ax2)
             ax2.set(xlim=(-100, 3000), ylim=(-100, MATBOARD_H+100))
             if show:
