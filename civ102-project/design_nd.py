@@ -89,6 +89,7 @@ def calc_diaphragms(wt, wb, h, sl, cl, mel, met, mes):
     D4 = mix(EC, 2*C-EC, 0.5)
     D1 = sl+10
     D2 = C-0.5*mel-10
+    D3 = 0.5*(D2+D4)
     if D2-D1 < 20:
         return None
     offset = 1.0
@@ -116,7 +117,7 @@ if __name__ == "__main__":
 
     # FoS = 2.40
     initial_params = [91, 30, 65, 180, 990, 500, 20, 15]
-    initial_params = [91.580026847925, 46.18791512628046, 81.10466561610673, 219.58374917543213, 927.3505703015933, 401.3280373802108, 20.216561623675524, 8.234325287862875]
+    initial_params = [91.61580029591246, 46.463653533343106, 81.17993434406554, 219.58374917543213, 927.3505703015933, 402.58218749702394, 20.25507075560746, 8.39290511377031]
 
     bridge = ba.Bridge(
         calc_cross_section, calc_diaphragms,
@@ -131,7 +132,7 @@ if __name__ == "__main__":
 
     #bridge.optimize_params()
     #bridge.analyze(bridge.params, plot=True)
-    #bridge.plot_3d(zoom=1.5)
+    bridge.plot_3d(zoom=1.5)
 
     description = """
 <p>
