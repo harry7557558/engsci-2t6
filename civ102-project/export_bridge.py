@@ -261,7 +261,7 @@ White is beam. Gray is unused region.
 All units are in mm. One pixel in this diagram is 1&nbsp;mm.
 </p><p>
 On a desktop device, you can mouse hover a rectangle to read the numbers.
-The second row contains the coordinates of the corners of a rectangle on the matboard.
+The second row contains the distance of the vertices of the rectangle from the edge of the matboard.
 The third row contains the width and height of the rectangle on its own coordinate system.
 Note that rectangles may be rotated.
 A sequence of point coordinates in the rectangle's coordinate system
@@ -379,8 +379,10 @@ function displayText(text) {
         # generate caption
         caption = [
             '; '.join(set(label.split('\n'))),
-            "(x1, y1, x2, y2) = ({:.1f}, {:.1f}, {:.1f}, {:.1f})".format(
-                prect.x, prect.y, prect.x+prect.width, prect.y+prect.height),
+            "(left, bottom, right, top) = ({:.1f}, {:.1f}, {:.1f}, {:.1f})".format(
+                prect.x, prect.y,
+                MATBOARD_W-(prect.x+prect.width),
+                MATBOARD_H-(prect.y+prect.height)),
             "(w, h) = ({:.1f}, {:.1f})".format(rect[0], rect[1]),
             "<hr/>"
         ]

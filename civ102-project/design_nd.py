@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     #bridge.optimize_params()
     #bridge.analyze(bridge.params, plot=True)
-    bridge.plot_3d(zoom=1.5)
+    #bridge.plot_3d(zoom=1.5)
 
     description = """
 <p>

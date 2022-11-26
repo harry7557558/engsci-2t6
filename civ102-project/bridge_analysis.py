@@ -13,7 +13,7 @@ VARYING_FOS = False
 
 # matboard parameters
 
-from rectpack import newPacker  # https://github.com/secnot/rectpack
+from rectpack import newPacker  # https://github.com/secnot/rectpack, version 0.2.2
 
 LENGTH = beam_analysis.LENGTH  # beam length
 MATBOARD_W = 1016
