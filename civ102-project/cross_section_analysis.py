@@ -47,6 +47,28 @@ def calc_max_bending_moment(parts, yc, I):
     return max_bm
 
 
+# split tensile and compressive calculation into two functions for the purpose of this assignment
+SPLIT_BM = False
+
+def calc_max_tension(parts, yc, I):
+    max_bm = float('inf')
+    for part in parts:
+        for p in part:
+            y = p[1] - yc
+            if y < 0:
+                max_bm = min(max_bm, SIGMA_T*I/-y)
+    return max_bm
+
+def calc_max_compression(parts, yc, I):
+    max_bm = float('inf')
+    for part in parts:
+        for p in part:
+            y = p[1] - yc
+            if y > 0:
+                max_bm = min(max_bm, SIGMA_C*I/y)
+    return max_bm
+
+
 def calc_shear_factor(parts, yc, I):
     """Maximum allowed shear force
             same parameters as `calc_max_bending_moment()`
@@ -95,11 +117,12 @@ def calc_shear_factor(parts, yc, I):
     for (y, b) in zip(ys, bs):
         if y != ys[-1]:
             dAdy_pieces.append([b, 0.0])
-            inv_b_pieces.append([1/b, 0.0])
+            inv_b_pieces.append([1/max(b,2*LINDEN_M), 0.0])
     dAdy = PiecewisePolynomial(ys, dAdy_pieces)
     ydAdy = dAdy.polymul(PiecewisePolynomial([ys[0], ys[-1]], [[-yc, 1]]))
     Q = ydAdy.integrate().mul(-1)
     inv_b = PiecewisePolynomial(ys, inv_b_pieces)
+    #plt.plot(*inv_b.get_plot_points()); plt.show()
     Q_Ib = Q.polymul(inv_b).mul(1/I)
 
     return Q_Ib
@@ -115,18 +138,17 @@ def calc_buckling_moment(pieces, yc, I):
             x1, x2, y1, y2 = x2, x1, y2, y1
         if not y2 > 0:
             continue
-        # formula likely not right
-        # underestimate is better than overestimate
         k = 4.0
         if y1 < 0:
             t = -y1 / (y2-y1)
             x1 += (x2-x1) * t
             y1 += (y2-y1) * t + 1e-12
             #k = 6.0
-        k = 6.0 - 2.0 * (y1/y2)**0.5  # ??
+        k = 6.0 - 2.0 * (y1/y2)**0.5  # underestimate is better than overestimate
         t = count * LINDEN_M
         b = np.hypot(x2-x1, y2-y1)
         sigma_crit = k*np.pi**2*E/12.0/(1.0-MU**2)*(t/b)**2
+        #print(t, b, k, sigma_crit, y2)
         max_bm = min(max_bm, sigma_crit * I / y2)
     return max_bm
 
@@ -253,6 +275,9 @@ def intersection_pieces(pieces1, pieces2):
 
 
 def cross_section_range(parts, bound_only=False):
+    """Calculates the range of the cross section, for packing rectangles
+        @bound_only is True: returns (width, height)
+        @bound_only is False: returns list[(width, height)] for individual pieces"""
     res = []
     minx, miny, maxx, maxy = np.inf, np.inf, -np.inf, -np.inf
     for part in parts:
@@ -274,7 +299,8 @@ def analyze_cross_section(parts_raw, parts, plot=False, return_full=False):
     """
         @parts: list of continuous point lists,
                 first point equals last point for a closed polygon
-        @parts_raw doesn't have offset, @parts has offset
+        @parts_raw: parts without considering offset due to matboard thickness
+                    used in determining glue joints
     """
     # represent points using NumPy arrays
     parts = [[np.array(p) for p in part] for part in parts]
@@ -296,11 +322,21 @@ def analyze_cross_section(parts_raw, parts, plot=False, return_full=False):
         for (p1, p2) in zip(part[:-1], part[1:]):
             pieces.append([p1, p2])
     pieces = overlap_pieces(pieces)
+    # doesn't work with "cut" pieces, but better than nothing
+    for part, part_raw in zip(parts, parts_raw):
+        for (p01, p02, p1, p2) in zip(part_raw[:-1], part_raw[1:],
+                                      part[:-1], part[1:]):
+            for i in range(len(pieces)):
+                q1, q2 = pieces[i][:2]
+                same = lambda p1, p2: np.linalg.norm(p2-p1)<1e-6
+                if (same(q1, p01) and same(q2, p02)) or \
+                   (same(q1, p02) and same(q2, p01)):
+                    pieces[i] = (p1, p2, pieces[i][2])
 
     # maximum allowed bending moment and shear force
     max_bm = calc_max_bending_moment(parts, yc, I)
     max_bm_b = calc_buckling_moment(pieces, yc, I_buckle)
-    sff = calc_shear_factor(parts_raw, yc, I)
+    sff = calc_shear_factor(parts, yc, I)
     #max_sf = 1.0 / sff.eval(yc)
     max_sf_y, Q_Ib = sff.get_optim(absolute=True)
     max_sf = SHEAR_M / Q_Ib
@@ -311,7 +347,10 @@ def analyze_cross_section(parts_raw, parts, plot=False, return_full=False):
     fos_shear_b = max_sf_b/SHEAR_MAX
 
     if plot:
+        print("yc:", yc, "mm")
+        print("A:", peri_m*LINDEN_M, "mm²")
         print("I:", I, "mm⁴")
+        print("Q/Ib:", Q_Ib, "mm³")
         print("Max BM:", 0.001*max_bm, "N⋅m", "\tFoS =", fos_bm)
         print("Max buckle BM:", 0.001*max_bm_b, "N⋅m", "\tFoS =", fos_bm_b)
         print("Max shear:", max_sf, "N", "\tFoS =", fos_shear)
@@ -327,7 +366,7 @@ def analyze_cross_section(parts_raw, parts, plot=False, return_full=False):
         ax1.set_ylabel("(mm)")
         ys, sffs = sff.get_plot_points()
         ax2.plot(sffs, ys)
-        ax2.plot(1.0/max_sf, max_sf_y, 'o')
+        ax2.plot(SHEAR_M/max_sf, max_sf_y, 'o')
         ax2.set_xlabel("maxV⁻¹ (N⁻¹)")
         plt.show()
 

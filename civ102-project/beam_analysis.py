@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 from PiecewisePolynomial import PiecewisePolynomial
 
 
+# strictly follow the instruction
+# do not include self weight and deflection
+# use 1mm increment
+STRICT_MODE = (__name__ == "__main__")
+#STRICT_MODE = False
+
+
 LENGTH = 1260.  # length of the beam
 
 
@@ -94,11 +101,13 @@ def solve_beam(
             cld += pl
         x_prev = x
 
+    # integrate to get sfd, bmd, slope, delta
     sfd = PiecewisePolynomial(poly_keypoints, poly_pieces)
     bmd = sfd.integrate()
     phi = bmd.mul(1.0/EI)
     slope = phi.integrate()
     delta = slope.integrate()
+    # choose integral constants to make deflection at supports zero
     y1 = delta.eval(p1)
     y2 = delta.eval(p2)
     corr_m = (y2-y1)/(p2-p1)
@@ -139,7 +148,8 @@ def solve_beam(
 
         plt.show()
 
-    xs = np.linspace(x1+1e-6, x2-1e-6, int(x2-x1)//10)
+    xs = np.linspace(x1+1e-12, x2-1e-12, int(x2-x1)// \
+                     (1 if STRICT_MODE else 10)+1)
     return (
         (np.array([p1, p2]), np.array([f1, f2])),
         (xs, abs(sfd.evals(xs))),
@@ -160,11 +170,21 @@ def get_responses(train_x, plot=False):
 
     EI = 4000 * 1e6
 
+    if STRICT_MODE:
+        return solve_beam(
+            0, LENGTH,
+            0.5*LENGTH-600, 0.5*LENGTH+600,
+            [[j+train_x, -train_weight/6] for j in train_joints],
+            [],
+            EI, plot
+        )
+
     return solve_beam(
         0, LENGTH,
         0.5*LENGTH-575, 0.5*LENGTH+575,
         [[j+train_x, -train_weight/6] for j in train_joints],
-        [((0, LENGTH), -board_mass/LENGTH)],
+        #[((0, LENGTH), -board_mass/LENGTH)],
+        [],
         EI,
         plot
     )
@@ -175,9 +195,11 @@ def plot_max_responses(plot=True):
     # generate a list of possible train left positions
     train_x1 = -960
     train_x2 = int(LENGTH)
-    xs = np.array(range(train_x1, train_x2+1, 2), dtype=np.float64)
+    xs = np.array(range(train_x1, train_x2+1,
+                        1 if STRICT_MODE else 2), dtype=np.float64)
 
     # find the maximum reaction across all positions
+    msfx, mbmx = train_x1, train_x1
     for x in xs:
         (rx, rv), (sfx, sfv), (bmx, bmv), (dfx, dfv) = get_responses(x)
         if x == xs[0]:
@@ -187,32 +209,35 @@ def plot_max_responses(plot=True):
             msfv = np.maximum(msfv, sfv)
             mbmv = np.maximum(mbmv, bmv)
             mdfv = np.minimum(mdfv, dfv)
+            if plot:
+                if np.amax(msfv) == np.amax(sfv):
+                    msfx = x
+                if np.amax(mbmv) == np.amax(bmv):
+                    mbmx = x
 
     if not plot:
         return np.amax(mrv), (sfx, msfv), (bmx, mbmv)
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 8))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7))
 
-    ax1.set_title("max reaction (N)")
-    ax1.plot(rx, mrv, 'o')
     print("Max reaction", np.amax(mrv), "N")
+    print("Max shear", np.amax(msfv), "N",
+          "at train_x =", msfx,
+          "at x =", sfx[np.argmax(msfv)])
+    print("Max bending", np.amax(0.001*mbmv), "N⋅m",
+          "at train_x =", mbmx,
+          "at x =", bmx[np.argmax(mbmv)])
 
-    ax2.set_title("max shear (N)")
-    ax2.plot(sfx, msfv, '-')
-    print("Max shear", np.amax(msfv), "N")
+    ax1.set_title("max shear (N)")
+    ax1.plot(sfx, msfv, '-')
 
-    ax3.set_title("max bending (N⋅m)")
-    ax3.plot(bmx, 0.001*mbmv, '-')
-    print("Max bending", np.amax(0.001*mbmv), "N⋅m")
-
-    ax4.set_title("max deflection (mm)")
-    ax4.plot(dfx, mdfv, '-')
-    print("Max deflection", np.amax(-mdfv), "mm", "- Assume I = 1e6 mm⁴")
+    ax2.set_title("max bending (×10³ N⋅mm)")
+    ax2.plot(bmx, 0.001*mbmv, '-')
 
     plt.show()
 
 
 if __name__ == "__main__":
 
-    #get_responses(167, True)
+    #get_responses(-123, True)
     plot_max_responses()

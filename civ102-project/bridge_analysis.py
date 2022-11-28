@@ -1,3 +1,6 @@
+# Failure analysis + packing to the matboard + optimization
+# Closely related to our design
+
 import numpy as np
 import scipy.optimize
 import matplotlib.pyplot as plt
@@ -20,14 +23,16 @@ MATBOARD_W = 1016
 MATBOARD_H = 813
 
 
+# component labeling convention
 def is_diaphragm_label(label):
-    if label.endswith('='):
+    if label.endswith('='):  # diaphragm padding
         return False
-    if '%' in label:
+    if '%' in label:  # put more pieces into one rectangle
         return True
     return label.startswith('d:') or label.startswith('de:')
 
 def plot_rect_color(label):
+    """For plotting"""
     if label in ['matboard', '']:
         return '#ccc'
     if 'support' in label:
@@ -39,6 +44,8 @@ def plot_rect_color(label):
     return '#fff'
 
 def pack_rect(rects, labels=None, ax=None):
+    """Returns a boolean, whether the rectangles can pack into the matboard
+        Plot the packed rectangles if @ax is not None"""
     packer = newPacker()
     if labels is None:
         for r in rects:
@@ -85,13 +92,12 @@ def get_max_bend(x0, x1):
     return np.amax(sf)
 
 
-# cross section
+# cross section class
 
 class BridgeCrossSection:
 
     def __init__(self, label, parts, glues=[], x0=None, x1=None, offset=0.0):
         assert (x0 is None and x1 is None) or x0 < x1
-        self.solved = False
         self.label = label
         self.x0 = x0
         self.x1 = x1
@@ -112,21 +118,6 @@ class BridgeCrossSection:
         self.perimeter, (self.xc, self.yc), (self.Ix, self.I) \
                         = csa.calc_geometry(self.parts)
         self.area = self.perimeter * (self.x1 - self.x0)
-
-    def solve(self):
-        if self.solved:
-            return
-        self.bend_max = get_max_bend(self.x0, self.x1)
-        self.shear_max = get_max_shear(self.x0, self.x1)
-        self.max_bm = csa.calc_max_bending_moment(self.parts, self.yc, self.I)
-        self.max_bm_b = csa.calc_buckling_moment(self.parts, self.yc, self.I)
-        self.shear_f = csa.calc_shear_factor(self.parts, self.yc, self.I)
-        self.max_shear = 1.0/self.shear_f.get_optim(absolute=True)[1]
-        self.fos_bend = self.max_bm / self.bend_max
-        self.fos_buckle = self.max_bm_b / self.bend_max
-        self.fos_shear = self.max_shear / self.shear_max
-        self.fos = min(self.fos_bend, self.fos_buckle, self.fos_shear)
-        self.solved = True
 
     def get_rects(self):
         res = []
@@ -257,6 +248,7 @@ class BridgeCrossSection:
 
 # bridge analysis
 
+# quasi-random sequence for optimization
 def vandercorput(n, b):
     x = 0.0
     e = 1.0 / b
@@ -359,7 +351,7 @@ class Bridge:
         return res
 
     def assert_ccw(self):
-        # CCW assertion
+        """Make sure the pieces are in CCW, required for offsetting"""
         cross_sections = self.calc_cross_section(*self.params)
         if cross_sections is None:
             print("`assert_ccw`: Cross section constraint violation.")
@@ -404,6 +396,7 @@ class Bridge:
     @staticmethod
     def generate_rects(cross_sections, diaphragms,
                        require_labels: bool, require_marks=False):
+        """Get a list of rectangles for packing into the matboard"""
         merged = Bridge.merge_diaphragms(diaphragms, require_marks)
         if require_marks:
             merged, merged_marks, merged_labels = merged
@@ -423,6 +416,7 @@ class Bridge:
         return rects, labels, folds
 
     def analyze(self, params, plot=False, show=True):
+        """Failure load of the bridge, plot"""
         cross_sections = self.calc_cross_section(*params)
         if cross_sections is None:
             if plot:
@@ -573,7 +567,7 @@ class Bridge:
             ax1.plot(cs_x, one/cs_bend_buckle, label="bend buckle fos⁻¹")
             ax1.plot(cs_x, one/cs_shear, label="shear fos⁻¹")
             ax1.plot(cs_x, one/cs_shear_buckle, label="shear buckle fos⁻¹")
-            ax1.plot(cs_x, one/cs_flexshear, label="flex shear fos⁻¹")
+            #ax1.plot(cs_x, one/cs_flexshear, label="flex shear fos⁻¹")
             ax1.legend()
             rects, labels = self.generate_rects(cross_sections, diaphragms, True)
             pack_rect(rects, labels, ax2)
@@ -582,6 +576,8 @@ class Bridge:
                 plt.show()
 
         return min_fos
+
+    # optimization stuff
 
     def random_param(self, seed):
         params = []
@@ -616,7 +612,7 @@ class Bridge:
                     break  # uncomment
         opt_params = np.array(opt_params)
 
-        # optimize - what the heck?
+        # optimize - simulated annealing with momentum
         maxi = 10000
         conv_params, conv_fos = opt_params, opt_fos
         for i in range(maxi):
@@ -650,7 +646,7 @@ class Bridge:
                 break
             if opt_fos == prev_fos:
                 break
-        
+
         for label, val in zip(self.param_labels, opt_params):
             print(label, '=', val)
         print("FoS =", self.analyze(opt_params))
