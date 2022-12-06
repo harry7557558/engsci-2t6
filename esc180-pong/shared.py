@@ -74,7 +74,7 @@ class LineSegment:
         """shortest distance to a point"""
         pa = p - self.p1
         h = dot(pa,self.d)/dot(self.d,self.d)
-        h = max(min(h, 1.0), 0.0)
+        #h = max(min(h, 1.0), 0.0)
         return (pa-self.d*h).length()
 
     def intersect(self, ro, rd):

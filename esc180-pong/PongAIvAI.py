@@ -25,8 +25,8 @@ from pygame.locals import *
 import math
 
 import pong_ai
-
-
+del sys.modules['pong_ai']
+import pong_ai as pong_ai_other
 
 
 
@@ -277,18 +277,21 @@ def render(screen, paddles, ball, score, table_size):
     screen.blit(score_font.render(str(score[0]), True, white), [int(0.4*table_size[0])-8, 0])
     screen.blit(score_font.render(str(score[1]), True, white), [int(0.6*table_size[0])-8, 0])
 
-    if len(pong_ai.paths) >= 2:
-        pygame.draw.lines(screen, white, False, [(p.x,p.y) for p in pong_ai.paths])
-    if len(pong_ai.killpaths) >= 2:
-        pygame.draw.lines(screen, (255,255,128), False, [(p.x,p.y) for p in pong_ai.killpaths])
-    for i in range(len(pong_ai.hits)):
+    '''if len(pong_ai.pg.paths) >= 2:
+        pygame.draw.lines(screen, white, False, [(p.x,p.y) for p in pong_ai.pg.paths])
+    #if len(pong_ai.pg.killpaths) >= 2:
+    #    pygame.draw.lines(screen, (255,255,128), False, [(p.x,p.y) for p in pong_ai.pg.killpaths])
+    """for i in range(len(pong_ai.hits)):
         p, v, t = pong_ai.hits[i]
         if i == 0:
             p0, v0, t0 = p, v, t
         color = (255,255,0) if i==0 else (0,255,0) if abs(t-t0)>abs(p.y-p0.y) else (255,0,0)
         pygame.draw.circle(screen, color, (p.x, p.y), 2, 0)
-        pygame.draw.line(screen, color, list(p-10*v), list(p))
-        
+        pygame.draw.line(screen, color, list(p-10*v), list(p))"""
+    if hasattr(pong_ai, 'y_range'):
+        pygame.draw.rect(screen, (128,128,128),
+                (210, pong_ai.y_range[0], 20, pong_ai.y_range[1]-pong_ai.y_range[0]))
+        '''
 
     pygame.display.flip()
 
@@ -310,6 +313,12 @@ def check_point(score, ball, table_size):
 def game_loop(screen, paddles, ball, table_size, clock_rate, turn_wait_rate, score_to_win, display):
     score = [0, 0]
 
+    #pong_ai.pg.parameter_log = []
+    #pong_ai.pg_other.parameter_log = []
+
+    import numpy as np
+    logs = None
+
     frame_id = 0
     while max(score) < score_to_win:
         frame_id += 1
@@ -330,12 +339,28 @@ def game_loop(screen, paddles, ball, table_size, clock_rate, turn_wait_rate, sco
         if not display:
             continue
         if score != old_score:
+            """winner = (score[0] != old_score[0]) ^ (paddles[0].move_getter == pong_ai.pong_ai)
+            winner, loser = int(winner), 1 - int(winner)
+            log0 = np.array(pong_ai.pg.parameter_log)
+            log1 = np.array(pong_ai.pg_other.parameter_log)
+            if log0.shape != (0,) and log1.shape != (0,):
+                if winner == 1:  # your opponent scores
+                    log0, log1 = log1, log0
+                log0 = np.concatenate([log0, np.ones((len(log0), 1))], axis=1)  # learn to be like this
+                log1 = np.concatenate([log1, -np.ones((len(log1), 1))], axis=1)  # learn to avoid being like this
+                if logs is None:
+                    logs = np.concatenate([log0, log1])
+                else:
+                    logs = np.concatenate([logs, log0, log1])
+                pong_ai.pg.parameter_log = []
+                pong_ai.pg_other.parameter_log = []
+
             font = pygame.font.Font(None, 32)
             if score[0] != old_score[0]:
                 screen.blit(font.render("Left scores!", True, white, black), [0, 32])
             else:
                 screen.blit(font.render("Right scores!", True, white, black), [int(table_size[0]/2+20), 32])
-
+            """
 
             pygame.display.flip()
             clock.tick(turn_wait_rate)
@@ -353,9 +378,11 @@ def game_loop(screen, paddles, ball, table_size, clock_rate, turn_wait_rate, sco
         if keys[K_q]:
             return
 
-
-
         clock.tick(clock_rate)
+
+    if logs is not None:
+        log_filename = 'logs/' + str(int(__import__('time').time())) + '.raw'
+        logs.astype(np.float32).tofile(log_filename)
 
     font = pygame.font.Font(None, 64)
     if score[0] > score[1]:
@@ -384,10 +411,10 @@ def init_game():
     wall_bounce = 1.00
     dust_error = 0.00
     init_speed_mag = 2
-    timeout = 0.0001
-    clock_rate = 800
+    timeout = 0.0003
+    clock_rate = 2000
     turn_wait_rate = 3
-    score_to_win = 20
+    score_to_win = 40
 
 
     screen = pygame.display.set_mode(table_size)
@@ -405,8 +432,9 @@ def init_game():
     
     paddles[0].move_getter = pong_ai.pong_ai
     paddles[1].move_getter = directions_from_input #chaser_ai.pong_ai
-    #paddles[1].move_getter = other_peoples_code.lindyzh_pongbot.pong_ai
-    paddles[1].move_getter = other_peoples_code.loluwot_pongai.better_ai.pong_ai
+    paddles[1].move_getter = other_peoples_code.lindyzh_pongbot.pong_ai
+    #paddles[1].move_getter = other_peoples_code.loluwot_pongai.better_ai.pong_ai
+    #paddles[1].move_getter = pong_ai_other.pong_ai
 
     paddles[0].move_getter, paddles[1].move_getter = paddles[1].move_getter, paddles[0].move_getter
     
