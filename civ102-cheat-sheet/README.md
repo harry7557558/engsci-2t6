@@ -1,3 +1,9 @@
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });
+</script>
+
+
 # Poetry
 
 Structure engineering: *The art and science of designing and making structures with economy and elegance so they can safely resist the forces to which they may be subjected.*
@@ -86,19 +92,20 @@ First moment of area $Q(y)$: $\int y dA$, $y$ is related to $\bar{y}$, integral 
  - Maximized at $y=\bar{y}$
 
 
-
 # Buckling
 
-FoS = $3$
+$\mathrm{FoS}=3.0$.
 
-Euler buckling load: $\pi^2EI/L^2$
+Euler buckling load: $P=\dfrac{\pi^2EI}{L^2}$
  - Use the direction with the smallest $I$
 
-Buckling load of thin plates: $\frac{k\pi^2}{12(1-\mu^2)}\left(\frac{t}{b}\right)^2$
+Buckling of thin plates: $\sigma=\dfrac{k\pi^2E}{12(1-\mu^2)}\left(\dfrac{t}{b}\right)^2$
  - Free edges: use the Euler buckling formula
  - Two fixed edges + uniform stress: $k=4$
  - One fixed edge + uniform stress: $k=0.425$
  - Two fixed edges + "triangle" stress: $k=6$
+
+Shear buckling of webs: $\tau=\dfrac{5\pi^2E}{12(1-\mu^2)}\left(\left(\dfrac{t}{h}\right)^2+\left(\dfrac{t}{a}\right)^2\right)$
 
 
 # Truss
@@ -119,7 +126,7 @@ Method of joints: start at one end and solve for reactions for each member
 Positive for tension, negative for compression
 
 Slenderness ratio $r=\sqrt{I/A}$  
-Select members: FoS = 2, $L/r<200$, $\sigma_y=350\mathrm{MPa}$ if not given;
+Select members: $\mathrm{FoS}=2.0$, $L/r<200$, $\sigma_y=350\mathrm{MPa}$ if not given;
 
 Wind pressure: $1/2 \rho v^2 c_D$, $c_D=1.5$ for bridge;  
 $W_{wind}=2.0\mathrm{KPa}$;
@@ -128,9 +135,9 @@ Area to consider: truss, handrail, etc.; Only consider one face.
 Truss deflection
  - Solve the truss, $F$ for each member
  - Each member's elongation $\Delta L = \epsilon L = FL/EA$
- - Apply a dummy load $P^*$ in the same direction of deflection to solve for
- - Solve the truss under the dummy load, each $F^*$
- - Virtual work $P^*\delta = \sum F^* \Delta L$, solve for deflection $\delta$
+ - Apply a dummy load $P^\ast$ in the same direction of deflection to solve for
+ - Solve the truss under the dummy load, each $F^\ast$
+ - Virtual work $P^\ast\delta = \sum F^\ast \Delta L$, solve for deflection $\delta$
 
 
 # Beam
@@ -141,7 +148,7 @@ Solve for reaction forces;
 SFD: integrate applied loads (including reaction forces, up is positive), endpoints are zero; positive y up;  
 BMD: integrate SFD, endpoints are zero; Bottom tension = positive, positive y down;
 
-Flectural stress: $\sigma = My/I$
+Flexural stress: $\sigma = My/I$
 
 Beam deflection
  - $\phi=M/EI$, integrate $\phi$ -> $\theta=\frac{dy}{dx}$, integrate $\theta$ -> $\delta$
@@ -155,37 +162,38 @@ Shear: $\tau=VQ/Ib$
 
 # Concrete
 
-FoS=2.0 for both flexural and shear. Use $\sigma_{ys}=400\mathrm{MPa}$ unless otherwise stated.
+$\mathrm{FoS}=2.0$ concrete and $1/0.6$ for steel. $E_s=200000\mathrm{MPa}$ and $\sigma_{y}=400\mathrm{MPa}$ for steel.
 
 Reinforced concrete beam, maximum width $b$, minimum width $b_w$, height $h$, distance from max compression to the centroid of tensile reinforcement steels $d$, stirrups (shear reinforcement) spacing $s$.
 
-Concrete compressive strength in MPa $f_c'$, $E_c=4500\sqrt{f_c'}$ in MPa.
+Concrete compressive strength in MPa $f_c'$, $E_c=4730\sqrt{f_c'}$ in MPa, tensile $f_t'=0.33\sqrt{f_c'}$ in MPa.
 
 $n=E_s/E_c$, $\rho=A_s/bd$, $k=\sqrt{(n\rho)^2+2n\rho}-n\rho$, $j=1-k/3$, all dimensionless.
 
-Experienced stress $\sigma_{s}=\dfrac{M}{A_s jd}$, $\sigma_{c}=\dfrac{M}{A_sjd}\dfrac{k}{1-k}\frac{1}{n}$.
+Calculate $jd$. Experienced stress $\sigma_{s}=\dfrac{M}{A_s jd}$, $\sigma_{c}=\dfrac{M}{A_sjd}\dfrac{k}{1-k}\dfrac{1}{n}$. Steel yield at $M_y=A_sf_yjd$.
 
 $d_v=0.9d$. Yield strength $f_y=\sigma_y$.
 
-Shear $V_{max}=0.25f_c'b_wd_v$, without stirrups $V_c=\dfrac{230\sqrt{f_c'}}{1000+d_v}b_wd_v$, with stirrups $V_c=0.18\sqrt{f_c'}b_wd_v$;  
-$V_s=\dfrac{A_vf_yd_v}{s}\cot35^\circ$, $V_t=V_c+V_s$. Divide by FoS for safe $V$.
+$A_v$: for example, two 10M stirrups in the cross section means a $A_v$ of $2\times100\mathrm{mm}$.
 
-Minimum $s$: $s=\dfrac{A_vf_y}{0.06\sqrt{f_c'}b_w}$, or $\dfrac{A_vf_y}{b_ws}\ge0.06\sqrt{f_c'}$.
+Failure shear: crushing $V_{max}=0.25f_c'b_wjd$; without stirrups $V_c=\dfrac{230\sqrt{f_c'}}{1000+0.9d}b_wjd$, with stirrups $V_c=0.18\sqrt{f_c'}b_wjd$;  
+$V_s=\dfrac{A_vf_yjd}{s}\cot35^\circ$, failure $V_t=V_c+V_s$, safe $V_r=0.5V_c+0.6V_s$.
 
-Safe $s$: $s=\dfrac{\frac{1}{2.0}A_vf_yd_v\cot35^\circ}{V-\frac{1}{2.0}0.18\sqrt{f_c'}b_wd_v}$
+Safe $s$: $s=\dfrac{0.6\cdot A_vf_yjd\cot35^\circ}{V-0.5\cdot0.18\sqrt{f_c'}b_wjd}$
 
 Evaluating concrete:
  - SFD, BMD
- - Check if $s$ is minimum
- - Use $v_c$ without strirrups when $s$ is bigger and with stirrups when $s$ is smaller
+ - Evaluate flexural + rebars
+ - Use $V_c$ without strirrups when $\dfrac{A_vf_y}{b_ws}<0.06\sqrt{f_c'}$ and with stirrups otherwise
  - Calculate $V_s$, $V_t$, $V_{max}$, capacity $V=\min(V_{max}, V_t)$
 
 Concrete design
  - SFD, BMD
  - Check if $V_{max}/2.0$ works, else change $b_w$ and/or $d$
- - Check if $V_c/2.0$ without stirrups works
- - Calculate $V_s$ with minimum $s$, calculate $V_c$ and $V_t$ and see if it works
- - Calculate safe $s$, reiterate the previous step for a good $s$
+ - Check if $V_c/2.0$ without stirrups works, good => design complete
+ - Calculate $V_s$ with minimum $s$, calculate $V_c$ and $V_r$ and see if it works
+    - OR: directly calculate $s$ from the $V_r$ equation
+ - Not working: reiterate the previous step with safe $s$
 
 
 ## Timber

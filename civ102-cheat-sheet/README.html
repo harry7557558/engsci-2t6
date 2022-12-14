@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });
+</script>
+<h1 id="poetry">Poetry</h1>
+<p>Structure engineering: <em>The art and science of designing and making structures with economy and elegance so they can safely resist the forces to which they may be subjected.</em></p>
+<p>Three principles of engineering</p>
+<ul>
+<li>$F=ma$</li>
+<li>You cannot push or a rope</li>
+<li>To get the answer you must know the answer</li>
+</ul>
+<p>3.5 sig figs, engineering notation.</p>
+<h2 id="equilibrium">Equilibrium</h2>
+<p>$\sum F = 0$, $\sum M = 0$. FBD.</p>
+<p>Uniform loads ($W$); Moment = moment calculated from all forces acting on the centroid; $M=WL(L/2) = \frac{1}{2} WL^2$.</p>
+<p>Vertical load on a hanging cable: $WL/2$<br>
+Horizontal load on a hanging cable: $\frac{WL^2}{8h}$<br>
+Don't forget a sus bridge has 2 cables.</p>
+<h1 id="deformation">Deformation</h1>
+<p>Hooke's law: $F=k\Delta L$, $k$ is axial stiffness.<br>
+Stress: $\sigma = F/A$; Strain: $\epsilon = \Delta l / l_0$;<br>
+$\sigma = E\epsilon$, $E$ is Young's modulus (or material stiffness);<br>
+$F=EA\Delta l/l_0$, $k=AE/l_0$.</p>
+<p>Stress-strain curve of low-alloy steel</p>
+<ul>
+<li>Small strain: linearly elastic, Hooke's law applies</li>
+<li>Yield: plastic deformation occurs, $\sigma_{yield}$ changes little as $\epsilon$ increases</li>
+<li>Strain hardening, necking, fracture</li>
+</ul>
+<p>Strain energy: area under stress-strain curve, energy per unit volume</p>
+<ul>
+<li>Resilience: energy of the elastic part</li>
+<li>Toughness: energy until breaks (elastic+plastic)</li>
+</ul>
+<p>Compressive strength;<br>
+Ductility: strain at fracture;<br>
+Coefficient of thermal expansion (thermal strain) $10^{-6}/K$;</p>
+<p>Allowable stress design: $\sigma_{allowed} = \sigma_{yield}/\mathrm{FoS}$; $\sigma_{applied}&lt;\sigma_{allowed}$ = safe.</p>
+<p>Limit states design: probability of failure is low enough.</p>
+<h1 id="dynamics">Dynamics</h1>
+<p>A mass on a spring being pulled downward</p>
+<ul>
+<li>$m\ddot{x}+kx=0$</li>
+<li>$x(t) = A\sin(\omega t+\phi)+\Delta_0$</li>
+<li>$\omega=\sqrt{k/m}$, $f=\frac{1}{2\pi}\sqrt{k/m}$, $T=f^{-1}=2\pi\sqrt{m/k}$, $\Delta_0=mg/k$, $A$ and $\phi$ depends on initial conditions</li>
+<li>$f\approx 15.76/\sqrt{\Delta_0}$, $f$ in Hz and $\Delta_0$ in mm</li>
+</ul>
+<p>Free vibration</p>
+<ul>
+<li>$m\ddot{x} + c\dot{x} + kx = mg$
+<ul>
+<li>$c=2\beta\sqrt{mk}$, $\beta$ is the fraction compared to critical damping</li>
+</ul>
+</li>
+<li>$x(t) = A e^{-\beta\omega_n t} \sin(\omega_n t \sqrt{1-\beta^2} + \phi) + \Delta_0$</li>
+<li>Single DoF: $f\approx15.76/\sqrt{\Delta_0}$</li>
+<li>Multi-DoF: $f_n\approx17.76/\sqrt{\Delta_0}$, use $\Delta_0$ in the middle</li>
+</ul>
+<p>Forced vibration</p>
+<ul>
+<li>Force $F(t) = F_0\sin(\omega_t)+mg$</li>
+<li>Steady state: $x(t) = DAF\cdot F_0/k \sin(\omega t + \phi) + \Delta_0$</li>
+<li>$DAF = 1/\operatorname{hypot}(1-(f/f_n)^2, 2\beta f/f_n)$</li>
+<li>$f$ is based on $\omega$, $f_n$ is resonance frequency</li>
+<li>$f/f_n=0$: DAF = 1; $f/f_n=1$: goes to infinity for $\beta=0$</li>
+<li>Experienced force: $mg+DAF\cdot F_0$</li>
+</ul>
+<h1 id="geometry">Geometry</h1>
+<p>Centroidal axis: $\bar{y}=\sum{Ay}/\sum{A}$</p>
+<p>Second moment of area $I$: $\int y^2 dA$ where $y$ is related to $\bar{y}$</p>
+<p>Second moment of area of a rectangle with width $b$ and height $h$: $bh^3/12$</p>
+<ul>
+<li>Add/subtract primitives</li>
+<li>After translation: $I=I_{\bar{y}}+Ad^2$</li>
+</ul>
+<p>Bending of beams: $\phi=d\theta/dl$, $r=\phi^{-1}$, $\epsilon=\phi y$, $M=EI\phi$</p>
+<p>First moment of area $Q(y)$: $\int y dA$, $y$ is related to $\bar{y}$, integral starts from the top/bottom</p>
+<ul>
+<li>Maximized at $y=\bar{y}$</li>
+</ul>
+<h1 id="buckling">Buckling</h1>
+<p>$\mathrm{FoS}=3.0$.</p>
+<p>Euler buckling load: $P=\dfrac{\pi^2EI}{L^2}$</p>
+<ul>
+<li>Use the direction with the smallest $I$</li>
+</ul>
+<p>Buckling of thin plates: $\sigma=\dfrac{k\pi^2E}{12(1-\mu^2)}\left(\dfrac{t}{b}\right)^2$</p>
+<ul>
+<li>Free edges: use the Euler buckling formula</li>
+<li>Two fixed edges + uniform stress: $k=4$</li>
+<li>One fixed edge + uniform stress: $k=0.425$</li>
+<li>Two fixed edges + &quot;triangle&quot; stress: $k=6$</li>
+</ul>
+<p>Shear buckling of webs: $\tau=\dfrac{5\pi^2E}{12(1-\mu^2)}\left(\left(\dfrac{t}{h}\right)^2+\left(\dfrac{t}{a}\right)^2\right)$</p>
+<h1 id="truss">Truss</h1>
+<p>Truss design iteration</p>
+<ul>
+<li>Geometry</li>
+<li>Determine applied loads</li>
+<li>Analyze internal forces</li>
+<li>Select members</li>
+<li>Determine maximum displacement</li>
+<li>Check dynamic properties</li>
+</ul>
+<p>Applied loads: Uniformly distributed load equally distributed on each joint by area/length</p>
+<p>Solve for reaction forces using equilibrium;<br>
+Method of sections: isolate, F/M equlibrium<br>
+Method of joints: start at one end and solve for reactions for each member<br>
+Positive for tension, negative for compression</p>
+<p>Slenderness ratio $r=\sqrt{I/A}$<br>
+Select members: $\mathrm{FoS}=2.0$, $L/r&lt;200$, $\sigma_y=350\mathrm{MPa}$ if not given;</p>
+<p>Wind pressure: $1/2 \rho v^2 c_D$, $c_D=1.5$ for bridge;<br>
+$W_{wind}=2.0\mathrm{KPa}$;
+Area to consider: truss, handrail, etc.; Only consider one face.</p>
+<p>Truss deflection</p>
+<ul>
+<li>Solve the truss, $F$ for each member</li>
+<li>Each member's elongation $\Delta L = \epsilon L = FL/EA$</li>
+<li>Apply a dummy load $P^\ast$ in the same direction of deflection to solve for</li>
+<li>Solve the truss under the dummy load, each $F^\ast$</li>
+<li>Virtual work $P^\ast\delta = \sum F^\ast \Delta L$, solve for deflection $\delta$</li>
+</ul>
+<h1 id="beam">Beam</h1>
+<p>Axial $N(x)$, shear $V(x)$, bending $M(x)$, deflection $\delta(x)$</p>
+<p>Solve for reaction forces;<br>
+SFD: integrate applied loads (including reaction forces, up is positive), endpoints are zero; positive y up;<br>
+BMD: integrate SFD, endpoints are zero; Bottom tension = positive, positive y down;</p>
+<p>Flexural stress: $\sigma = My/I$</p>
+<p>Beam deflection</p>
+<ul>
+<li>$\phi=M/EI$, integrate $\phi$ -&gt; $\theta=\frac{dy}{dx}$, integrate $\theta$ -&gt; $\delta$</li>
+<li>Moment area theorem 1: $\Delta\theta$ = area under $\phi$</li>
+<li>Moment area theorem 2: tangential deviation equals the area under the $Mx/EI$ graph</li>
+</ul>
+<p>Shear: $\tau=VQ/Ib$</p>
+<ul>
+<li>Definition: force divided by parallel area</li>
+<li>In the material vs. At glue/nail joints</li>
+</ul>
+<h1 id="concrete">Concrete</h1>
+<p>$\mathrm{FoS}=2.0$ concrete and $1/0.6$ for steel. $E_s=200000\mathrm{MPa}$ and $\sigma_{y}=400\mathrm{MPa}$ for steel.</p>
+<p>Reinforced concrete beam, maximum width $b$, minimum width $b_w$, height $h$, distance from max compression to the centroid of tensile reinforcement steels $d$, stirrups (shear reinforcement) spacing $s$.</p>
+<p>Concrete compressive strength in MPa $f_c'$, $E_c=4730\sqrt{f_c'}$ in MPa, tensile $f_t'=0.33\sqrt{f_c'}$ in MPa.</p>
+<p>$n=E_s/E_c$, $\rho=A_s/bd$, $k=\sqrt{(n\rho)^2+2n\rho}-n\rho$, $j=1-k/3$, all dimensionless.</p>
+<p>Calculate $jd$. Experienced stress $\sigma_{s}=\dfrac{M}{A_s jd}$, $\sigma_{c}=\dfrac{M}{A_sjd}\dfrac{k}{1-k}\dfrac{1}{n}$. Steel yield at $M_y=A_sf_yjd$.</p>
+<p>$d_v=0.9d$. Yield strength $f_y=\sigma_y$.</p>
+<p>$A_v$: for example, two 10M stirrups in the cross section means a $A_v$ of $2\times100\mathrm{mm}$.</p>
+<p>Failure shear: crushing $V_{max}=0.25f_c'b_wjd$; without stirrups $V_c=\dfrac{230\sqrt{f_c'}}{1000+0.9d}b_wjd$, with stirrups $V_c=0.18\sqrt{f_c'}b_wjd$;<br>
+$V_s=\dfrac{A_vf_yjd}{s}\cot35^\circ$, failure $V_t=V_c+V_s$, safe $V_r=0.5V_c+0.6V_s$.</p>
+<p>Safe $s$: $s=\dfrac{0.6\cdot A_vf_yjd\cot35^\circ}{V-0.5\cdot0.18\sqrt{f_c'}b_wjd}$</p>
+<p>Evaluating concrete:</p>
+<ul>
+<li>SFD, BMD</li>
+<li>Evaluate flexural + rebars</li>
+<li>Use $V_c$ without strirrups when $\dfrac{A_vf_y}{b_ws}&lt;0.06\sqrt{f_c'}$ and with stirrups otherwise</li>
+<li>Calculate $V_s$, $V_t$, $V_{max}$, capacity $V=\min(V_{max}, V_t)$</li>
+</ul>
+<p>Concrete design</p>
+<ul>
+<li>SFD, BMD</li>
+<li>Check if $V_{max}/2.0$ works, else change $b_w$ and/or $d$</li>
+<li>Check if $V_c/2.0$ without stirrups works, good =&gt; design complete</li>
+<li>Calculate $V_s$ with minimum $s$, calculate $V_c$ and $V_r$ and see if it works
+<ul>
+<li>OR: directly calculate $s$ from the $V_r$ equation</li>
+</ul>
+</li>
+<li>Not working: reiterate the previous step with safe $s$</li>
+</ul>
+<h2 id="timber">Timber</h2>
+<p>Anisotropic material, stiffer + higher strength at &quot;vertical&quot; direction in a tree.</p>
+<p>Use the 5th-percentile strength in design with $\mathrm{FoS}=1.5$.</p>
+<p>Use the 50th-pencentile strength in deflection calculation.</p>
+
+</body>
+</html>
