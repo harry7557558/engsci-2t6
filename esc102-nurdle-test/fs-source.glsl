@@ -1,8 +1,8 @@
 precision highp float;
 
-uniform float iRx, iRz, iRy;
 uniform float iDist;
 uniform vec2 iResolution;
+uniform float iAlpha;
 
 varying vec3 vPos;
 
@@ -31,7 +31,7 @@ void main() {
     col = mix(col, vec3(1), smoothstep(3.0*iDist, 8.0*iDist, length(xy)));
 
     col = pow(col, vec3(0.4545));
+    col = clamp(col,0.,1.);
 
-    gl_FragColor = vec4(col, 0.5+0.5*nurdle_k);
-    // gl_FragColor = vec4(vec3(nurdle_k), 1);
+    gl_FragColor = vec4(mix(col, vec3(nurdle_k), iAlpha), 1);
 }

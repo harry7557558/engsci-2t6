@@ -2,9 +2,9 @@
 
 
 var viewport = {
-    iRx: 0.6,
-    iRz: 0.9,
-    iDist: 3.0,
+    iRx: 0.35 * Math.PI,
+    iRz: 0.3 * Math.PI,
+    iDist: 5.0,
     renderNeeded: true
 };
 
@@ -111,9 +111,8 @@ function initWebGL(gl) {
             vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
         },
         uniformLocations: {  // uniform variables
-            iRx: gl.getUniformLocation(shaderProgram, 'iRx'),
-            iRz: gl.getUniformLocation(shaderProgram, 'iRz'),
             iDist: gl.getUniformLocation(shaderProgram, 'iDist'),
+            iAlpha: gl.getUniformLocation(shaderProgram, 'iAlpha'),
             iResolution: gl.getUniformLocation(shaderProgram, "iResolution"),
             iTransform: gl.getUniformLocation(shaderProgram, "iTransform"),
         },
@@ -179,12 +178,11 @@ function calcMatrix() {
 }
 
 // call this function to re-render
-function drawScene(gl, programInfo) {
+function drawScene(gl, programInfo, alpha) {
 
     // clear the canvas
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.7, 0.89, 0.95, 1);
-    gl.clearColor(1, 1, 1, 0.5);
+    gl.clearColor(1 - alpha, 1 - alpha, 1 - alpha, 1);
     gl.clearDepth(-1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
@@ -212,11 +210,10 @@ function drawScene(gl, programInfo) {
 
     // set shader uniforms
     // https://webglfundamentals.org/webgl/lessons/webgl-shaders-and-glsl.html
-    gl.uniform1f(programInfo.uniformLocations.iRx, viewport.iRx);
-    gl.uniform1f(programInfo.uniformLocations.iRz, viewport.iRz);
     gl.uniform1f(programInfo.uniformLocations.iDist, viewport.iDist);
     gl.uniform2f(programInfo.uniformLocations.iResolution, canvas.clientWidth, canvas.clientHeight);
     gl.uniformMatrix4fv(programInfo.uniformLocations.iTransform, false, calcMatrix());
+    gl.uniform1f(programInfo.uniformLocations.iAlpha, alpha);
 
     // render
     {
@@ -226,84 +223,6 @@ function drawScene(gl, programInfo) {
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
 }
-
-
-// ============================ NURDLES ==============================
-
-
-function fract(x) {
-    return x - Math.floor(x);
-}
-
-function hash12(x, y) {
-    // float hash12(vec2 p) {
-    //     vec3 p3  = fract(vec3(p.xyx) * .1031);
-    //     p3 += dot(p3, p3.yzx + 33.33);
-    //     return fract((p3.x + p3.y) * p3.z);
-    // }
-    var p3x = fract(x * .1031);
-    var p3y = fract(y * .1031);
-    var p3z = p3x;
-    var d = p3x * (p3y + 33.33) + p3y * (p3z + 33.33) + p3z * (p3x + 33.33);
-    return fract((p3x + p3y + 2 * d) * (p3z + d));
-}
-
-function calcNurdles() {
-    let mat = calcMatrix();
-    function transform(u) {
-        var v = [0, 0, 0, 0];
-        for (var a = 0; a < 4; a++)
-            for (var b = 0; b < 4; b++)
-                v[a] += mat[4 * b + a] * u[b];
-        if (v[3] < 0.0)
-            return null;
-        return [v[0] / v[3], v[1] / v[3]];
-    }
-    var nurdles = [];
-    var N = 30;
-    for (var i = -N; i <= N; i++) {
-        var nurdles_t = [];
-        for (var j = -N; j <= N; j++) {
-            if (Math.hypot(i, j) > Math.min(N, 6.0 * viewport.iDist))
-                continue;
-            if (hash12(i, j) >= 0.1 + 0.1 * Math.sin(i) * Math.cos(j))
-                continue;
-            var x = -0.4 + 0.4 * hash12(i + 0.1, j + 0.1);
-            var y = -0.4 + 0.4 * hash12(i + 0.2, j + 0.2);
-            var u = [0.5 * (i + x), 0.5 * (j + y), 0.0, 1.0];
-            var v = transform(u);
-            if (v == null) continue;
-            if (Math.abs(v[0]) >= 1.0 && Math.abs(v[1]) >= 1.0)
-                continue;
-            var h = 0.01;
-            var x1 = transform([u[0] + h, u[1], u[2], u[3]]);
-            var x0 = transform([u[0] - h, u[1], u[2], u[3]]);
-            var y1 = transform([u[0], u[1] + h, u[2], u[3]]);
-            var y0 = transform([u[0], u[1] - h, u[2], u[3]]);
-            var dx = [
-                (x1[0] - x0[0]) / (2.0 * h) * window.innerWidth,
-                (x1[1] - x0[1]) / (2.0 * h) * window.innerHeight
-            ];
-            var dy = [
-                (y1[0] - y0[0]) / (2.0 * h) * window.innerWidth,
-                (y1[1] - y0[1]) / (2.0 * h) * window.innerHeight
-            ];
-            var a = Math.sqrt(Math.abs(dx[0] * dy[1] - dx[1] * dy[0]));
-            if (a > 75.0)
-                nurdles_t.push(v);
-        }
-        nurdles = nurdles.concat(nurdles_t);
-    }
-    let container = document.getElementById("nurdles");
-    container.innerHTML = "";
-    for (var i = 0; i < nurdles.length; i++) {
-        var x = (0.5 + 0.5 * nurdles[i][0]) * window.innerWidth;
-        var y = (0.5 - 0.5 * nurdles[i][1]) * window.innerHeight;
-        container.innerHTML += "<div class='nurdle' style='left:" + x + "px;top:" + y + "px'/>";
-    }
-    return nurdles;
-}
-
 
 
 // ============================ MAIN ==============================
@@ -329,9 +248,11 @@ function main() {
 
             canvas.width = canvas.style.width = window.innerWidth;
             canvas.height = canvas.style.height = window.innerHeight;
-            drawScene(gl, programInfo);
+            drawScene(gl, programInfo, 0.0);
 
             // calcNurdles();
+
+            // document.write("<img src='" + document.getElementById("canvas").toDataURL("image/jpeg", 1) + "'/>");
 
             viewport.renderNeeded = false;
         }

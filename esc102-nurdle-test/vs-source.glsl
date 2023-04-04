@@ -2,7 +2,6 @@ precision highp float;
 
 attribute vec4 aVertexPosition;
 
-uniform float iRx, iRz;
 uniform float iDist;
 uniform vec2 iResolution;
 uniform mat4 iTransform;
