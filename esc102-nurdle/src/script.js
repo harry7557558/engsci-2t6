@@ -5,37 +5,70 @@
 var renderer = {
     canvas: null,
     gl: null,
+    nLayers: 12,
     width: -1,
     height: -1,
     iFrame: 0,
+    renderNeeded: true
 };
+
+function i2id(i, d = 2) {
+    i = i.toString();
+    while (i.length < d) i = "0" + i;
+    return i;
+}
 
 // hard-coded batch norm weights
 const weights = {
-    bn00: [1.5067475, 0.73462236, 0.9027463],
-    bn01: [1.0160867, -0.5190285, 0.42915004],
-    bn02: [0.6691655, 0.6620227, 0.6227424],
-    bn03: [0.006436822, 0.0065827384, 0.007982741],
-    bn10: [1.3520912, 0.8920276, 1.2923803, 1.0416291],
-    bn11: [-0.37641674, -0.3698626, -0.06813239, -1.20616],
-    bn12: [5.098454, -0.07922329, -1.5588161, 12.819611],
-    bn13: [16.921711, 20.866167, 17.406403, 48.901127],
-    bn20: [1.1458615, 0.9962743, 0.7491567, 1.1077212],
-    bn21: [-1.4370297, -0.20699756, -1.573737, 0.25815344],
-    bn22: [-2.7830803, 1.5557672, -4.217627, 1.8538486],
-    bn23: [75.8165, 25.582893, 20.978085, 24.738379],
-    bn30: [0.7774884, 1.4483851, 1.2628847, 0.7937931],
-    bn31: [0.92373097, -0.033770848, 1.3037564, 0.2659414],
-    bn32: [4.62958, 0.3990834, 5.1560297, -0.58347964],
-    bn33: [22.434797, 27.502625, 30.352474, 19.078442],
-    bn40: [0.95617354, 1.1717262, 1.0471597, 0.9096549],
-    bn41: [1.3659971, 0.15213971, 0.7811826, 1.448209],
-    bn42: [11.527573, -3.5671787, 6.5716677, 16.242535],
-    bn43: [47.819103, 20.99566, 28.102276, 78.71919],
-    bn50: [1],
-    bn51: [0],
-    bn52: [0],
-    bn53: [1],
+    bn000: [1.0875437, 0.5369309, 1.473317],
+    bn001: [0.2487396, -0.9525007, -0.19628945],
+    bn002: [0.5844249, 0.5447748, 0.49758208],
+    bn003: [0.030239817, 0.028824896, 0.030168401],
+    bn010: [1.2324575, 0.7495642, 1.381774, 1.3054899],
+    bn011: [0.19467758, 0.19788893, 0.17214468, 0.22925404],
+    bn012: [-0.8799407, -2.5948296, -0.6307882, 0.13043472],
+    bn013: [1.4815185, 4.076296, 2.7199693, 5.0037313],
+    bn020: [0.6682743, 1.5771377, 1.0267625, 1.2508844],
+    bn021: [-0.43936253, 0.42591658, -0.6834548, 0.16599116],
+    bn022: [2.5228357, 0.7737249, -0.43457204, 0.027493501],
+    bn023: [5.16551, 8.782018, 2.882289, 7.2866917],
+    bn030: [1.6136072, 1.1954765, 1.0695794, 0.9225741],
+    bn031: [0.14704981, -0.42891672, -0.48235574, -0.19320083],
+    bn032: [-2.8392692, -2.6562238, -1.1566317, 3.1849725],
+    bn033: [24.423037, 25.105013, 8.510271, 28.97101],
+    bn040: [1.3041219, 0.69821906, 0.66234356, 1.1005255],
+    bn041: [0.751065, -0.005547544, -0.6242232, 1.0371691],
+    bn042: [-0.89758086, -0.32209155, -0.9474234, -0.6896971],
+    bn043: [5.2010565, 16.417025, 8.812019, 4.848618],
+    bn050: [0.8799694, 1.0538652, 1.1641568, 1.200811],
+    bn051: [-0.27644825, -0.3896804, 0.59128076, 0.30521405],
+    bn052: [-4.670373, -0.85437447, -2.345801, -1.4016482],
+    bn053: [18.855791, 11.491445, 19.035099, 6.4028406],
+    bn060: [0.8946732, 0.9071275, 1.007496, 1.199179],
+    bn061: [0.5000499, -0.47228158, 0.28620112, -0.7111842],
+    bn062: [1.9119624, 2.6707883, -4.6874204, 0.1788203],
+    bn063: [4.190943, 9.364522, 21.634615, 8.907826],
+    bn070: [1.1327761, 1.2169952, 1.0438268, 1.2242298],
+    bn071: [-0.29658198, -0.4025115, -0.16613413, -0.021814192],
+    bn072: [0.25966427, 2.2204158, -0.49577796, -0.72139126],
+    bn073: [11.897299, 11.092597, 5.0902762, 17.471506],
+    bn080: [1.6280907, 0.976057, 1.3802146, 0.7956999],
+    bn081: [-0.0999923, 0.45473814, -0.19672333, -0.009975298],
+    bn082: [-0.25645903, -1.7288702, 0.26522893, 1.5673889],
+    bn083: [42.53321, 4.855316, 30.56159, 10.939028],
+    bn090: [0.9479627, 0.76004285, 0.9669737, 1.297626],
+    bn091: [-0.3172532, 0.14124908, 0.5320815, 0.8525788],
+    bn092: [-0.16991317, -2.0539656, 0.14125739, -2.3391674],
+    bn093: [3.6389396, 13.038954, 33.76478, 19.781153],
+    bn100: [1.3477169, 1.1263705, 0.62507266, 0.5132608],
+    bn101: [0.94958377, -0.34217754, -0.18692152, -0.5332354],
+    bn102: [3.7211475, 3.7108977, -4.0354342, 5.73437],
+    bn103: [24.345665, 30.162807, 13.131075, 31.46819],
+    bn110: [0.8656952, 0.9007957, 0.5685502, 0.31277353],
+    bn111: [0.49168396, 0.52483743, 0.75863594, 0.25391576],
+    bn112: [-5.156895, 5.2432404, 3.7451725, -6.6363025],
+    bn113: [20.904793, 33.036736, 31.335789, 52.296574],
+    
 };
 
 // request shader sources
@@ -71,7 +104,7 @@ function createShaderProgram(vsSource, fsSource) {
 }
 
 // image texture
-function loadTexture(url) {
+function loadTexture(url, callback) {
     let gl = renderer.gl;
     let texture = gl.createTexture();
 
@@ -97,6 +130,7 @@ function loadTexture(url) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        callback(image.width, image.height);
     };
     image.onerror = function () {
         alert("Failed to load texture.");
@@ -196,6 +230,10 @@ function loadWeightTexture(url, texture_name) {
 
 // call this function to re-render
 async function drawScene() {
+    if (!renderer.renderNeeded)
+        return;
+    renderer.renderNeeded = false;
+
     let gl = renderer.gl;
     gl.viewport(0, 0, renderer.width, renderer.height);
 
@@ -235,16 +273,16 @@ async function drawScene() {
     gl.uniform1i(gl.getUniformLocation(renderer.preprocProgram, "iSampler"), 0);
     gl.uniform2f(gl.getUniformLocation(renderer.preprocProgram, "iResolution"),
         renderer.width, renderer.height);
-    setBN(renderer.preprocProgram, "bnMu", weights.bn02);
-    setBN(renderer.preprocProgram, "bnVar", weights.bn03);
-    setBN(renderer.preprocProgram, "bnA", weights.bn00);
-    setBN(renderer.preprocProgram, "bnB", weights.bn01);
+    setBN(renderer.preprocProgram, "bnMu", weights.bn002);
+    setBN(renderer.preprocProgram, "bnVar", weights.bn003);
+    setBN(renderer.preprocProgram, "bnA", weights.bn000);
+    setBN(renderer.preprocProgram, "bnB", weights.bn001);
     setPositionBuffer(renderer.preprocProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // convolution
     gl.useProgram(renderer.convProgram);
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < renderer.nLayers; i++) {
         gl.bindFramebuffer(gl.FRAMEBUFFER,
             renderer.convTargets[i].framebuffer);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "ZERO"), 0);
@@ -257,21 +295,22 @@ async function drawScene() {
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "iSampler"), 0);
 
         gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, renderer['w0' + i]);
+        gl.bindTexture(gl.TEXTURE_2D, renderer['w' + i2id(i)]);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "iW"), 1);
 
-        gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "iKs"),
-            [5, 5, 5, 3, 3][i]);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "nIn"),
-            [3, 4, 4, 4, 4][i]);
+            i == 0 ? 3 : 4);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "nOut"),
-            [4, 4, 4, 4, 1][i]);
+            i + 1 == renderer.nLayers ? 1 : 4);
 
         var j = i + 1;
-        setBN(renderer.convProgram, "bnMu", weights['bn' + j + '2']);
-        setBN(renderer.convProgram, "bnVar", weights['bn' + j + '3']);
-        setBN(renderer.convProgram, "bnA", weights['bn' + j + '0']);
-        setBN(renderer.convProgram, "bnB", weights['bn' + j + '1']);
+        if (j < renderer.nLayers) {
+            j = i2id(j);
+            setBN(renderer.convProgram, "bnMu", weights['bn' + j + '2']);
+            setBN(renderer.convProgram, "bnVar", weights['bn' + j + '3']);
+            setBN(renderer.convProgram, "bnA", weights['bn' + j + '0']);
+            setBN(renderer.convProgram, "bnB", weights['bn' + j + '1']);
+        }
 
         setPositionBuffer(renderer.convProgram);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -286,7 +325,7 @@ async function drawScene() {
     gl.bindTexture(gl.TEXTURE_2D, renderer.image);
     gl.uniform1i(gl.getUniformLocation(renderer.highlightProgram, "iSampler"), 0);
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, renderer.convTargets[4].texture);
+    gl.bindTexture(gl.TEXTURE_2D, renderer.convTargets[renderer.nLayers - 1].texture);
     gl.uniform1i(gl.getUniformLocation(renderer.highlightProgram, "nSampler"), 1);
     setPositionBuffer(renderer.highlightProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -297,11 +336,18 @@ async function drawScene() {
 // load model
 function loadModel() {
     let path = "train/weights";
-    loadWeightTexture(path + "/w00_4_3_5_5.bin", "w00");
-    loadWeightTexture(path + "/w01_4_4_5_5.bin", "w01");
-    loadWeightTexture(path + "/w02_4_4_5_5.bin", "w02");
+    loadWeightTexture(path + "/w00_4_3_3_3.bin", "w00");
+    loadWeightTexture(path + "/w01_4_4_3_3.bin", "w01");
+    loadWeightTexture(path + "/w02_4_4_3_3.bin", "w02");
     loadWeightTexture(path + "/w03_4_4_3_3.bin", "w03");
-    loadWeightTexture(path + "/w04_1_4_3_3.bin", "w04");
+    loadWeightTexture(path + "/w04_4_4_3_3.bin", "w04");
+    loadWeightTexture(path + "/w05_4_4_3_3.bin", "w05");
+    loadWeightTexture(path + "/w06_4_4_3_3.bin", "w06");
+    loadWeightTexture(path + "/w07_4_4_3_3.bin", "w07");
+    loadWeightTexture(path + "/w08_4_4_3_3.bin", "w08");
+    loadWeightTexture(path + "/w09_4_4_3_3.bin", "w09");
+    loadWeightTexture(path + "/w10_4_4_3_3.bin", "w10");
+    loadWeightTexture(path + "/w11_1_4_3_3.bin", "w11");
 }
 
 // load renderer/interaction
@@ -328,8 +374,54 @@ window.onload = function () {
     renderer.width = canvas.width;
     renderer.height = canvas.height;
 
-    // image - do this first
-    renderer.image = loadTexture("train/nurdles_train.jpg");
+    // position buffer
+    renderer.positionBuffer = renderer.gl.createBuffer();
+    renderer.gl.bindBuffer(renderer.gl.ARRAY_BUFFER, renderer.positionBuffer);
+    var positions = [-1, 1, 1, 1, -1, -1, 1, -1];
+    renderer.gl.bufferData(renderer.gl.ARRAY_BUFFER, new Float32Array(positions), renderer.gl.STATIC_DRAW);
+
+    // framebuffers
+    renderer.preprocTarget = createRenderTarget(renderer.width, renderer.height);
+    renderer.convTargets = [];
+    for (var i = 0; i < renderer.nLayers; i++)
+        renderer.convTargets.push(createRenderTarget(renderer.width, renderer.height));
+
+    function updateRendererSize(w, h) {
+        renderer.width = canvas.width = w;
+        renderer.height = canvas.height = h;
+        destroyRenderTarget(renderer.preprocTarget);
+        renderer.preprocTarget = createRenderTarget(w, h);
+        for (var i = 0; i < renderer.nLayers; i++) {
+            destroyRenderTarget(renderer.convTargets[i]);
+            renderer.convTargets[i] = createRenderTarget(w, h);
+        }
+    }
+
+    // image - do this earlier
+    var imgid = 0;
+    var imgw = 600;
+    var loadTextureCallback = function(w, h) {
+        var sc = imgw / Math.max(w, h);
+        updateRendererSize(sc*w, sc*h);
+        renderer.renderNeeded = true;
+    };
+    renderer.image = loadTexture(
+        "train/images/train/00.jpg",
+        loadTextureCallback
+    );
+    window.addEventListener("wheel", function(event) {
+        if (event.shiftKey)
+            return;
+        event.preventDefault();
+        if (event.ctrlKey)
+            imgw *= Math.exp(event.deltaY > 0 ? -0.1 : 0.1)
+        else
+            imgid = (imgid + (event.deltaY > 0 ? 1 : 20)) % 21;
+        renderer.image = loadTexture(
+            "train/images/train/" + i2id(imgid) + ".jpg",
+            loadTextureCallback
+        );
+    });
 
     // weights/textures
     loadModel();
@@ -355,23 +447,11 @@ window.onload = function () {
     }
     console.timeEnd("compile shader");
 
-    // position buffer
-    renderer.positionBuffer = renderer.gl.createBuffer();
-    renderer.gl.bindBuffer(renderer.gl.ARRAY_BUFFER, renderer.positionBuffer);
-    var positions = [-1, 1, 1, 1, -1, -1, 1, -1];
-    renderer.gl.bufferData(renderer.gl.ARRAY_BUFFER, new Float32Array(positions), renderer.gl.STATIC_DRAW);
-
-    // framebuffers
-    renderer.preprocTarget = createRenderTarget(renderer.width, renderer.height);
-    renderer.convTargets = [];
-    for (var i = 0; i < 5; i++)
-        renderer.convTargets.push(createRenderTarget(renderer.width, renderer.height));
-
     // rendering
     function render() {
         drawScene();
         renderer.iFrame += 1;
-        // setTimeout(function () { requestAnimationFrame(render); }, 100);
+        setTimeout(function () { requestAnimationFrame(render); }, 100);
     }
     requestAnimationFrame(render);
 

@@ -9,7 +9,7 @@ uniform vec2 iResolution;
 uniform sampler2D iSampler;
 
 uniform sampler2D iW;  // weights
-uniform int iKs;  // kernel size, odd
+#define iKs 3  /* kernel size, odd */
 uniform int nIn, nOut;  // in/out channels, between 1 and 4
 uniform vec4 bnMu, bnVar, bnA, bnB;  // batch norm, fixed
 

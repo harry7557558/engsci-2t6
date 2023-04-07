@@ -27,24 +27,34 @@ void main() {
 
     float alpha = 0.0;
     vec2 sc = min(iResolution.x, iResolution.y) / iResolution.xy;
-    vec2 s0 = 0.01*sc, s1 = 0.011*sc;
+    vec2 s0 = 0.006*sc, s1 = 0.007*sc;
     const float n = 32.;
     for (float i = 0.; i < n; i++) {
         float t = 2.0*3.14159*i/n;
         vec2 r = vec2(cos(t),sin(t));
         float a1 = getN(uv+r*s1);
         float a2 = getN(uv+r*s0);
-        float a = 5.0*(a1-a2);
+        float a = 15.0*(a1-a2);
         a = clamp(a, 0.0, 1.0);
         // a = pow(a, 2.0) / (pow(1.0-a,2.0)+pow(a,2.0));
         a = 0.5*(a+a*a);
+        a = pow(a, 2.0);
         alpha = max(alpha, a);
     }
+
+    float h = 0.005;
+    float ddx = getN(uv+vec2(h,0)*sc.x)-getN(uv-vec2(h,0)*sc.x);
+    float ddy = getN(uv+vec2(0,h)*sc.x)-getN(uv-vec2(0,h)*sc.x);
+    // alpha = clamp(0.01/h*length(vec2(ddx,ddy)),0.,1.);
+
+    // alpha = getN(uv);
 
     vec2 border = min(uv, 1.0-uv) - s1;
     if (min(border.x, border.y) > 1.0/min(iResolution.x,iResolution.y) || false) {
         col = mix(vec3(0.6,0.55,0.6)*col, vec3(0.5,1,0), alpha);
     }
+
+    // col = vec3(1.0*getN(uv));
 
     fragColor = vec4(col, 1);
 }
