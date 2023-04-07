@@ -8,7 +8,8 @@ var renderer = {
     nLayers: 12,
     width: -1,
     height: -1,
-    iFrame: 0,
+    image: null,
+    imageTexture: null,
     renderNeeded: true
 };
 
@@ -68,7 +69,7 @@ const weights = {
     bn111: [0.49168396, 0.52483743, 0.75863594, 0.25391576],
     bn112: [-5.156895, 5.2432404, 3.7451725, -6.6363025],
     bn113: [20.904793, 33.036736, 31.335789, 52.296574],
-    
+
 };
 
 // request shader sources
@@ -123,16 +124,16 @@ function loadTexture(url, callback) {
         srcFormat, srcType, pixel);
 
     const image = new Image();
-    image.onload = function () {
+    image.onload = function() {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
             srcFormat, srcType, image);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        callback(image.width, image.height);
+        callback(image);
     };
-    image.onerror = function () {
+    image.onerror = function() {
         alert("Failed to load texture.");
     }
     // image.crossOrigin = "";
@@ -212,10 +213,10 @@ function loadWeightTexture(url, texture_name) {
     var req = new XMLHttpRequest();
     req.open("GET", url, true);
     req.responseType = "arraybuffer";
-    req.onerror = function (e) {
+    req.onerror = function(e) {
         alert("Failed to load texture " + texture_name);
     };
-    req.onload = function (e) {
+    req.onload = function(e) {
         if (req.status == 200) {
             var weights = new Float32Array(req.response);
             onload(weights);
@@ -264,12 +265,16 @@ async function drawScene() {
             gl.uniform4f(location, bn[0], bn[1], bn[2], bn[3]);
     }
 
+    // update video
+    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, renderer.image);
+
     // preprocessing
     gl.useProgram(renderer.preprocProgram);
     gl.bindFramebuffer(gl.FRAMEBUFFER, renderer.preprocTarget.framebuffer);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, renderer.image);
+    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
     gl.uniform1i(gl.getUniformLocation(renderer.preprocProgram, "iSampler"), 0);
     gl.uniform2f(gl.getUniformLocation(renderer.preprocProgram, "iResolution"),
         renderer.width, renderer.height);
@@ -279,6 +284,7 @@ async function drawScene() {
     setBN(renderer.preprocProgram, "bnB", weights.bn001);
     setPositionBuffer(renderer.preprocProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    //return;
 
     // convolution
     gl.useProgram(renderer.convProgram);
@@ -291,7 +297,7 @@ async function drawScene() {
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D,
-            i == 0 ? renderer.preprocTarget.texture : renderer.convTargets[i-1].texture);
+            i == 0 ? renderer.preprocTarget.texture : renderer.convTargets[i - 1].texture);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "iSampler"), 0);
 
         gl.activeTexture(gl.TEXTURE1);
@@ -322,7 +328,7 @@ async function drawScene() {
     gl.uniform2f(gl.getUniformLocation(renderer.highlightProgram, "iResolution"),
         renderer.width, renderer.height);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, renderer.image);
+    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
     gl.uniform1i(gl.getUniformLocation(renderer.highlightProgram, "iSampler"), 0);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, renderer.convTargets[renderer.nLayers - 1].texture);
@@ -351,7 +357,7 @@ function loadModel() {
 }
 
 // load renderer/interaction
-window.onload = function () {
+window.onload = function() {
     // get context
     function onError(error) {
         console.error(error);
@@ -367,18 +373,19 @@ window.onload = function () {
     if (renderer.gl.getExtension("EXT_color_buffer_float") == null)
         return onError("Error: Your browser does not support WebGL float texture.");
     renderer.timerExt = renderer.gl.getExtension('EXT_disjoint_timer_query_webgl2');
-    canvas.addEventListener("webglcontextlost", function (event) {
+    canvas.addEventListener("webglcontextlost", function(event) {
         event.preventDefault();
         onError("Error: WebGL context lost.");
     }, false);
     renderer.width = canvas.width;
     renderer.height = canvas.height;
+    let gl = renderer.gl;
 
     // position buffer
-    renderer.positionBuffer = renderer.gl.createBuffer();
-    renderer.gl.bindBuffer(renderer.gl.ARRAY_BUFFER, renderer.positionBuffer);
+    renderer.positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, renderer.positionBuffer);
     var positions = [-1, 1, 1, 1, -1, -1, 1, -1];
-    renderer.gl.bufferData(renderer.gl.ARRAY_BUFFER, new Float32Array(positions), renderer.gl.STATIC_DRAW);
+    gl.bufferData(renderer.gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     // framebuffers
     renderer.preprocTarget = createRenderTarget(renderer.width, renderer.height);
@@ -387,6 +394,13 @@ window.onload = function () {
         renderer.convTargets.push(createRenderTarget(renderer.width, renderer.height));
 
     function updateRendererSize(w, h) {
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+        var sc1 = Math.min(1920.0 / Math.max(w, h), 1.0);
+        var sc2 = Math.max(480.0 / Math.min(w, h), 1.0);
+        var sc = Math.sqrt(sc1*sc2);
+        w = Math.round(w * sc);
+        h = Math.round(h * sc);
         renderer.width = canvas.width = w;
         renderer.height = canvas.height = h;
         destroyRenderTarget(renderer.preprocTarget);
@@ -395,33 +409,36 @@ window.onload = function () {
             destroyRenderTarget(renderer.convTargets[i]);
             renderer.convTargets[i] = createRenderTarget(w, h);
         }
-    }
-
-    // image - do this earlier
-    var imgid = 0;
-    var imgw = 600;
-    var loadTextureCallback = function(w, h) {
-        var sc = imgw / Math.max(w, h);
-        updateRendererSize(sc*w, sc*h);
         renderer.renderNeeded = true;
-    };
-    renderer.image = loadTexture(
-        "train/images/train/00.jpg",
-        loadTextureCallback
-    );
-    window.addEventListener("wheel", function(event) {
-        if (event.shiftKey)
-            return;
-        event.preventDefault();
-        if (event.ctrlKey)
-            imgw *= Math.exp(event.deltaY > 0 ? -0.1 : 0.1)
-        else
-            imgid = (imgid + (event.deltaY > 0 ? 1 : 20)) % 21;
-        renderer.image = loadTexture(
-            "train/images/train/" + i2id(imgid) + ".jpg",
+    }
+    updateRendererSize(window.innerWidth, window.innerHeight);
+
+    // image testing - do this earlier
+    if (false) {
+        var imgid = 0;
+        var imgw = 600;
+        var loadTextureCallback = function(image) {
+            renderer.image = image;
+            renderer.renderNeeded = true;
+        };
+        renderer.imageTexture = loadTexture(
+            "train/images/train/00.jpg",
             loadTextureCallback
         );
-    });
+        window.addEventListener("wheel", function(event) {
+            if (event.shiftKey)
+                return;
+            event.preventDefault();
+            if (event.ctrlKey)
+                imgw *= Math.exp(event.deltaY > 0 ? -0.1 : 0.1)
+            else
+                imgid = (imgid + (event.deltaY > 0 ? 1 : 20)) % 21;
+            renderer.imageTexture = loadTexture(
+                "train/images/train/" + i2id(imgid) + ".jpg",
+                loadTextureCallback
+            );
+        });
+    }
 
     // weights/textures
     loadModel();
@@ -447,16 +464,46 @@ window.onload = function () {
     }
     console.timeEnd("compile shader");
 
+    // video
+    renderer.imageTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    renderer.image = document.createElement('video');
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+            width: { min: 0, ideal: window.innerHeight, max: 1920 },
+            height: { min: 0, ideal: window.innerWidth, max: 1920 },
+            facingMode: "environment"
+        },
+    })
+        .then(stream => {
+            renderer.image.srcObject = stream;
+            renderer.image.play();
+            renderer.image.addEventListener('playing', () => {
+                renderer.renderNeeded = true;
+            });
+
+        })
+        .catch(error => {
+            // alert("Failed to access camera.");
+            document.write('Error accessing camera: ', error);
+        });
+
+
     // rendering
     function render() {
         drawScene();
-        renderer.iFrame += 1;
-        setTimeout(function () { requestAnimationFrame(render); }, 100);
+        renderer.renderNeeded = true;
+        setTimeout(function() { requestAnimationFrame(render); }, 100);
     }
     requestAnimationFrame(render);
 
     // interactions
-    window.addEventListener("resize", function (event) {
+    window.addEventListener("resize", function(event) {
+        updateRendererSize(window.innerWidth, window.innerHeight);
     });
 
 }
