@@ -6,6 +6,8 @@ out vec4 fragColor;
 uniform vec2 iResolution;
 
 uniform sampler2D iSampler;  // image
+uniform vec4 iClip;  // xy bottom left uv, zw top right
+
 uniform sampler2D nSampler;  // nurdle
 
 float getN(vec2 xy) {
@@ -23,7 +25,8 @@ float getN(vec2 xy) {
 void main() {
     vec2 uv = (gl_FragCoord.xy+0.5)/iResolution.xy;
 
-    vec3 col = texture(iSampler, vec2(uv.x,1.0-uv.y)).xyz;
+    vec2 uvs = mix(iClip.xy, iClip.zw, uv);
+    vec3 col = texture(iSampler, vec2(uvs.x,1.0-uvs.y)).xyz;
 
     float alpha = 0.0;
     vec2 sc = min(iResolution.x, iResolution.y) / iResolution.xy;
@@ -51,7 +54,7 @@ void main() {
 
     vec2 border = min(uv, 1.0-uv) - s1;
     if (min(border.x, border.y) > 1.0/min(iResolution.x,iResolution.y) || false) {
-        col = mix(vec3(0.6,0.55,0.6)*col, vec3(0.5,1,0), alpha);
+        col = mix(vec3(0.45,0.45,0.5)*col, vec3(1,0.5,1), alpha);
     }
 
     // col = vec3(1.0*getN(uv));

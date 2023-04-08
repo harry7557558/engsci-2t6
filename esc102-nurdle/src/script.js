@@ -8,10 +8,15 @@ var renderer = {
     nLayers: 12,
     width: -1,
     height: -1,
+    zoomAvailable: false,
+    zoom: 2.5,
+    zoomMin: 1.0,
+    zoomMax: 4.0,
     renderVideo: true,
     image: null,
     imageTexture: null,
-    renderNeeded: true
+    paused: true,
+    renderNeeded: true,
 };
 
 function i2id(i, d = 2) {
@@ -132,6 +137,7 @@ function destroyRenderTarget(target) {
     gl.deleteFramebuffer(target.framebuffer);
 }
 
+// load model weights as a texture
 function loadWeightTexture(url, texture_name) {
     const gl = renderer.gl;
 
@@ -178,11 +184,40 @@ function loadWeightTexture(url, texture_name) {
 }
 
 
+function calcClip() {
+    var scx = 0.5, scy = 0.5;
+    try {
+        var w = renderer.image.videoWidth;
+        var h = renderer.image.videoHeight;
+        w /= window.innerWidth;
+        h /= window.innerHeight;
+        if (w > h) scx *= h / w;
+        else scy *= w / h;
+    } catch (e) {
+        console.error(e);
+    }
+    if (!renderer.zoomAvailable) {
+        scx /= renderer.zoom;
+        scy /= renderer.zoom;
+    }
+    return [
+        0.5 - scx,
+        0.5 - scy,
+        0.5 + scx,
+        0.5 + scy
+    ];
+}
+
 // call this function to re-render
 async function drawScene() {
+    document.getElementById("info").style.display =
+        renderer.paused ? "block" : "none";
+
     if (!renderer.renderNeeded)
         return;
     renderer.renderNeeded = false;
+
+    let clip = calcClip();
 
     let gl = renderer.gl;
     gl.viewport(0, 0, renderer.width, renderer.height);
@@ -222,6 +257,8 @@ async function drawScene() {
     gl.uniform1i(gl.getUniformLocation(renderer.preprocProgram, "iSampler"), 0);
     gl.uniform2f(gl.getUniformLocation(renderer.preprocProgram, "iResolution"),
         renderer.width, renderer.height);
+    gl.uniform4f(gl.getUniformLocation(renderer.preprocProgram, "iClip"),
+        clip[0], clip[1], clip[2], clip[3]);
     setBN(renderer.preprocProgram, "bnMu", weights.bn002);
     setBN(renderer.preprocProgram, "bnVar", weights.bn003);
     setBN(renderer.preprocProgram, "bnA", weights.bn000);
@@ -293,6 +330,8 @@ async function drawScene() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.uniform2f(gl.getUniformLocation(renderer.highlightProgram, "iResolution"),
         renderer.width, renderer.height);
+    gl.uniform4f(gl.getUniformLocation(renderer.highlightProgram, "iClip"),
+        clip[0], clip[1], clip[2], clip[3]);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
     gl.uniform1i(gl.getUniformLocation(renderer.highlightProgram, "iSampler"), 0);
@@ -320,6 +359,125 @@ function loadModel() {
     loadWeightTexture(path + "/w09_4_4_3_3.bin", "w09");
     loadWeightTexture(path + "/w10_4_4_3_3.bin", "w10");
     loadWeightTexture(path + "/w11_1_4_3_3.bin", "w11");
+}
+
+
+function setupCamera() {
+    let gl = renderer.gl;
+    renderer.imageTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+    renderer.image = document.createElement('video');
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+            //width: { ideal: window.innerHeight },
+            //height: { ideal: window.innerWidth },
+            facingMode: "environment"
+        },
+    }).then(stream => {
+        renderer.image.srcObject = stream;
+        renderer.image.play();
+        renderer.image.addEventListener('playing', () => {
+            renderer.renderNeeded = true;
+        });
+        // set zooming
+        let track = stream.getVideoTracks()[0];
+        let capabilities = track.getCapabilities();
+        let settings = track.getSettings();
+        if (!('zoom' in capabilities)) return;
+        renderer.zoomAvailable = true;
+        renderer.zoomMin = capabilities.zoom.min;
+        renderer.zoomMax = capabilities.zoom.max;
+        renderer.zoom = Math.min(settings.zoom * renderer.zoom, renderer.zoomMax);
+        track.applyConstraints({ advanced: [{ zoom: renderer.zoom }] });
+    }).catch(error => {
+        // alert("Failed to access camera.");
+        document.write('Error accessing camera: ', error);
+        renderer.gl = null;
+    });
+
+    function zoom(sc) {
+        renderer.zoom *= sc;
+        renderer.zoom = Math.min(renderer.zoom, renderer.zoomMax);
+        renderer.zoom = Math.max(renderer.zoom, renderer.zoomMin);
+        renderer.renderNeeded = true;
+        if (renderer.zoomAvailable) {
+            let track = renderer.image.srcObject.getVideoTracks()[0];
+            track.applyConstraints({ advanced: [{ zoom: renderer.zoom }] });
+        }
+    }
+
+    var pointerDown = false;
+    var previousMove = -1.0;
+    var previousDown = -1.0;
+    var previousUp = -1.0;
+    var fingerDist = -1;
+    window.addEventListener("pointerdown", function(event) {
+        event.preventDefault();
+        previousDown = 0.001 * performance.now();
+        pointerDown = true;
+    });
+    window.addEventListener("pointerup", function(event) {
+        event.preventDefault();
+        pointerDown = false;
+        var t = 0.001 * performance.now();
+        if (t - previousMove < 0.4)
+            return;
+        previousMove = -1.0;
+        if (t - previousUp < 0.6 && !renderer.paused) {
+            renderer.paused = true;
+            previousDown = -1.0;
+            previousUp = t;
+        }
+        else if (t - previousDown < 0.3 && renderer.paused) {
+            renderer.paused = false;
+            previousUp = -1.0;
+        }
+        else previousUp = t;
+    });
+    canvas.addEventListener("pointermove", function(event) {
+        if (renderer.paused) return;
+        event.preventDefault();
+        if (pointerDown && Math.hypot(event.movementX, event.movementY) > 1.5)
+            previousMove = 0.001 * performance.now();
+        if (pointerDown && fingerDist == -1) {
+            var delta = event.movementY / window.innerHeight;
+            zoom(Math.exp(5.0*delta));
+        }
+    });
+    canvas.addEventListener("touchstart", function(event) {
+        if (renderer.paused) return;
+        event.preventDefault();
+        if (event.touches.length == 2) {
+            var fingerPos0 = [event.touches[0].pageX, event.touches[0].pageY];
+            var fingerPos1 = [event.touches[1].pageX, event.touches[1].pageY];
+            fingerDist = Math.hypot(fingerPos1[0] - fingerPos0[0], fingerPos1[1] - fingerPos0[1]);
+        }
+    }, { passive: false });
+    canvas.addEventListener("touchend", function(event) {
+        if (renderer.paused) return;
+        event.preventDefault();
+        fingerDist = -1.0;
+    }, { passive: false });
+    canvas.addEventListener("touchmove", function(event) {
+        if (renderer.paused) return;
+        event.preventDefault();
+        if (event.touches.length != 2)
+            return;
+        var fingerPos0 = { x: event.touches[0].pageX, y: event.touches[0].pageY };
+        var fingerPos1 = { x: event.touches[1].pageX, y: event.touches[1].pageY };
+        var newFingerDist = Math.hypot(fingerPos1.x - fingerPos0.x, fingerPos1.y - fingerPos0.y);
+        if (fingerDist > 0. && newFingerDist > 0.) {
+            zoom(newFingerDist / fingerDist);
+        }
+        fingerDist = newFingerDist;
+        renderer.renderNeeded = true;
+    }, { passive: false });
+
 }
 
 // load renderer/interaction
@@ -367,7 +525,7 @@ window.onload = function() {
         canvas.style.height = h + "px";
         var sc1 = Math.min(1920.0 / Math.max(w, h), 1.0);
         var sc2 = Math.max(480.0 / Math.min(w, h), 1.0);
-        var sc = Math.sqrt(sc1*sc2);
+        var sc = Math.sqrt(sc1 * sc2);
         w = Math.round(w * sc);
         h = Math.round(h * sc);
         renderer.width = canvas.width = w;
@@ -395,7 +553,7 @@ window.onload = function() {
             renderer.image = image;
             let w = image.width, h = image.height;
             let sc = imgw / Math.max(w, h);
-            updateRendererSize(sc*w, sc*h);
+            updateRendererSize(sc * w, sc * h);
             renderer.renderNeeded = true;
         };
         renderer.imageTexture = loadTexture(
@@ -445,33 +603,7 @@ window.onload = function() {
 
     // video
     if (renderer.renderVideo) {
-        renderer.imageTexture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        renderer.image = document.createElement('video');
-        navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: {
-                width: { min: 0, ideal: window.innerHeight, max: 1920 },
-                height: { min: 0, ideal: window.innerWidth, max: 1920 },
-                facingMode: "environment"
-            },
-        })
-            .then(stream => {
-                renderer.image.srcObject = stream;
-                renderer.image.play();
-                renderer.image.addEventListener('playing', () => {
-                    renderer.renderNeeded = true;
-                });
-
-            })
-            .catch(error => {
-                // alert("Failed to access camera.");
-                document.write('Error accessing camera: ', error);
-                renderer.gl = null;
-            });
+        setupCamera();
     }
 
     // rendering
@@ -479,7 +611,8 @@ window.onload = function() {
         if (renderer.gl == null)
             return;
         drawScene();
-        if (renderer.renderVideo)
+        renderer.renderNeeded = false;
+        if (renderer.renderVideo && !renderer.paused)
             renderer.renderNeeded = true;
         setTimeout(function() { requestAnimationFrame(render); }, 100);
     }

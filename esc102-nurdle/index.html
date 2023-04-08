@@ -1,4 +1,8 @@
+<!DOCTYPE html>
+<head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="none" />
 
 <style>
     canvas {
@@ -9,6 +13,32 @@
         padding: 0;
         width: 100%;
         height: 100%;
+    }
+
+    #info {
+        position: fixed;
+        left: 0;
+        top: 0;
+        margin: 10% 5%;
+        width: 70%;
+        height: 70%;
+        background-color: rgba(0,64,64,0.7);
+        padding: 5% 10%;
+        color: white;
+        font-family: sans-serif;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    p {
+        margin: 10px 0;
+        font-size: 1.2em;
+    }
+
+    hr {
+        display: inline-block;
+        width: 100%;
+        margin: 10px 0;
     }
 </style>
 
@@ -72,8 +102,27 @@ bn113: [145.47766, 130.37566, 93.26849, 152.7514],
 
 </script>
 
+</head>
 
-<canvas id="canvas"></canvas>
+<body>
 
-<p id="error-message"></p>
+    <canvas id="canvas"></canvas>
+    
+    <p id="error-message"></p>
 
+    <div id="info">
+        <h1>PAUSED</h1>
+        <p>Camera faces the beach</p>
+        <p>Nurdles are circled in pink</p>
+        <hr/>
+        <p>Start: tap</p>
+        <p>Pause: double tap</p>
+        <p>Zoom in: swipe down</p>
+        <p>Zoom out: swipe up</p>
+        <br/>
+        <hr/>
+        <p>Brought to you by<p/>
+        <p>Team W131517</p>
+    </div>
+
+</body>
