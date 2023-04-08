@@ -13,12 +13,6 @@ using std::max;
 struct Tile {
     uint8_t data[3][S][S];
 };
-struct vec3 {
-    float x[3];
-    vec3(float v = 0.0) {
-        x[0] = x[1] = x[2] = v;
-    }
-};
 
 int W, H;
 uint8_t *imgin;
@@ -64,7 +58,6 @@ void getPixel(
 std::vector<Tile> tiles;
 std::vector<uint8_t> values;
 std::vector<float> weights;
-std::vector<vec3> means, invstdevs;
 
 void addTile(float cx, float cy, float rx, float ry, float angle) {
     Tile t;
@@ -102,32 +95,6 @@ void addTile(float cx, float cy, float rx, float ry, float angle) {
         }
     }
     values.push_back(out);
-
-    // mean and variance
-    float scx = min(W, H) / (float)W;
-    float scy = min(W, H) / (float)H;
-    const float n = 24.0;
-    vec3 s1(0), s2(0);
-    for (float i = 0.5; i < n; i++) {
-        const float phi = 0.5*(1.+sqrt(5.));
-        float u1 = fmod(i/phi, 1.0), u2 = i/n;
-        float a = 2.0*3.1415923*u2;
-        float r = 0.2*sqrt(-2.0*log(1.0-u1));
-        uint8_t c[3];
-        getPixel(imgin, 3, cx+r*scx*cos(a), cy+r*scy*sin(a), c);
-        for (int _ = 0; _ < 3; _++) {
-            float t = c[_] / 255.0;
-            s1.x[_] += t, s2.x[_] += t * t;
-        }
-    }
-    vec3 mean, invstdev;
-    for (int _ = 0; _ < 3; _++) {
-        mean.x[_] = s1.x[_] / n;
-        float var = (s2.x[_]-s1.x[_]*s1.x[_]/n)/(n-1.);
-        invstdev.x[_] = 1.0/sqrt(var+1e-2);
-    }
-    means.push_back(mean);
-    invstdevs.push_back(invstdev);
 }
 
 #define N_TILES 5000
@@ -176,8 +143,6 @@ int main() {
     tiles.reserve(N_TILES*N_IMGS);
     values.reserve(N_TILES*N_IMGS);
     weights.reserve(N_TILES*N_IMGS);
-    means.reserve(N_TILES*N_IMGS);
-    invstdevs.reserve(N_TILES*N_IMGS);
     for (int i = 0; i < N_IMGS; i++) {
         std::string filename("00");
         sprintf(&filename[0], "%02d", i%21);  // first 2 weight more
@@ -202,13 +167,6 @@ int main() {
     fclose(fp);
     fp = fopen("data_weight.raw", "wb");
     fwrite(&weights[0], 4, weights.size(), fp);
-    fclose(fp);
-    assert(sizeof(vec3) == 12);
-    fp = fopen("data_mean.raw", "wb");
-    fwrite(&means[0], 12, means.size(), fp);
-    fclose(fp);
-    fp = fopen("data_invstdev.raw", "wb");
-    fwrite(&invstdevs[0], 12, invstdevs.size(), fp);
     fclose(fp);
     return 0;
 }

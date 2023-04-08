@@ -8,6 +8,7 @@ var renderer = {
     nLayers: 12,
     width: -1,
     height: -1,
+    renderVideo: true,
     image: null,
     imageTexture: null,
     renderNeeded: true
@@ -19,58 +20,6 @@ function i2id(i, d = 2) {
     return i;
 }
 
-// hard-coded batch norm weights
-const weights = {
-    bn000: [1.0875437, 0.5369309, 1.473317],
-    bn001: [0.2487396, -0.9525007, -0.19628945],
-    bn002: [0.5844249, 0.5447748, 0.49758208],
-    bn003: [0.030239817, 0.028824896, 0.030168401],
-    bn010: [1.2324575, 0.7495642, 1.381774, 1.3054899],
-    bn011: [0.19467758, 0.19788893, 0.17214468, 0.22925404],
-    bn012: [-0.8799407, -2.5948296, -0.6307882, 0.13043472],
-    bn013: [1.4815185, 4.076296, 2.7199693, 5.0037313],
-    bn020: [0.6682743, 1.5771377, 1.0267625, 1.2508844],
-    bn021: [-0.43936253, 0.42591658, -0.6834548, 0.16599116],
-    bn022: [2.5228357, 0.7737249, -0.43457204, 0.027493501],
-    bn023: [5.16551, 8.782018, 2.882289, 7.2866917],
-    bn030: [1.6136072, 1.1954765, 1.0695794, 0.9225741],
-    bn031: [0.14704981, -0.42891672, -0.48235574, -0.19320083],
-    bn032: [-2.8392692, -2.6562238, -1.1566317, 3.1849725],
-    bn033: [24.423037, 25.105013, 8.510271, 28.97101],
-    bn040: [1.3041219, 0.69821906, 0.66234356, 1.1005255],
-    bn041: [0.751065, -0.005547544, -0.6242232, 1.0371691],
-    bn042: [-0.89758086, -0.32209155, -0.9474234, -0.6896971],
-    bn043: [5.2010565, 16.417025, 8.812019, 4.848618],
-    bn050: [0.8799694, 1.0538652, 1.1641568, 1.200811],
-    bn051: [-0.27644825, -0.3896804, 0.59128076, 0.30521405],
-    bn052: [-4.670373, -0.85437447, -2.345801, -1.4016482],
-    bn053: [18.855791, 11.491445, 19.035099, 6.4028406],
-    bn060: [0.8946732, 0.9071275, 1.007496, 1.199179],
-    bn061: [0.5000499, -0.47228158, 0.28620112, -0.7111842],
-    bn062: [1.9119624, 2.6707883, -4.6874204, 0.1788203],
-    bn063: [4.190943, 9.364522, 21.634615, 8.907826],
-    bn070: [1.1327761, 1.2169952, 1.0438268, 1.2242298],
-    bn071: [-0.29658198, -0.4025115, -0.16613413, -0.021814192],
-    bn072: [0.25966427, 2.2204158, -0.49577796, -0.72139126],
-    bn073: [11.897299, 11.092597, 5.0902762, 17.471506],
-    bn080: [1.6280907, 0.976057, 1.3802146, 0.7956999],
-    bn081: [-0.0999923, 0.45473814, -0.19672333, -0.009975298],
-    bn082: [-0.25645903, -1.7288702, 0.26522893, 1.5673889],
-    bn083: [42.53321, 4.855316, 30.56159, 10.939028],
-    bn090: [0.9479627, 0.76004285, 0.9669737, 1.297626],
-    bn091: [-0.3172532, 0.14124908, 0.5320815, 0.8525788],
-    bn092: [-0.16991317, -2.0539656, 0.14125739, -2.3391674],
-    bn093: [3.6389396, 13.038954, 33.76478, 19.781153],
-    bn100: [1.3477169, 1.1263705, 0.62507266, 0.5132608],
-    bn101: [0.94958377, -0.34217754, -0.18692152, -0.5332354],
-    bn102: [3.7211475, 3.7108977, -4.0354342, 5.73437],
-    bn103: [24.345665, 30.162807, 13.131075, 31.46819],
-    bn110: [0.8656952, 0.9007957, 0.5685502, 0.31277353],
-    bn111: [0.49168396, 0.52483743, 0.75863594, 0.25391576],
-    bn112: [-5.156895, 5.2432404, 3.7451725, -6.6363025],
-    bn113: [20.904793, 33.036736, 31.335789, 52.296574],
-
-};
 
 // request shader sources
 function loadShaderSource(path) {
@@ -255,14 +204,9 @@ async function drawScene() {
     // set batch norm uniforms
     function setBN(program, varname, bn) {
         let location = gl.getUniformLocation(program, varname);
-        if (bn.length == 1)
-            gl.uniform1f(location, bn[0]);
-        if (bn.length == 2)
-            gl.uniform2f(location, bn[0], bn[1]);
-        if (bn.length == 3)
-            gl.uniform3f(location, bn[0], bn[1], bn[2]);
-        if (bn.length == 4)
-            gl.uniform4f(location, bn[0], bn[1], bn[2], bn[3]);
+        bn = bn.slice();
+        while (bn.length < 4) bn.push(0);
+        gl.uniform4f(location, bn[0], bn[1], bn[2], bn[3]);
     }
 
     // update video
@@ -286,11 +230,32 @@ async function drawScene() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     //return;
 
-    // convolution
-    gl.useProgram(renderer.convProgram);
     for (var i = 0; i < renderer.nLayers; i++) {
-        gl.bindFramebuffer(gl.FRAMEBUFFER,
-            renderer.convTargets[i].framebuffer);
+        // batch norm
+        // gl.useProgram(renderer.bnProgram);
+        // gl.bindFramebuffer(gl.FRAMEBUFFER,
+        //     renderer.bnTargets[i].framebuffer);
+        // gl.uniform1i(gl.getUniformLocation(renderer.bnProgram, "ZERO"), 0);
+        // gl.uniform2f(gl.getUniformLocation(renderer.bnProgram, "iResolution"),
+        //     renderer.width, renderer.height);
+
+        // gl.activeTexture(gl.TEXTURE0);
+        // gl.bindTexture(gl.TEXTURE_2D,
+        //     i == 0 ? renderer.preprocTarget.texture : renderer.convTargets[i - 1].texture);
+        // gl.uniform1i(gl.getUniformLocation(renderer.bnProgram, "iSampler"), 0);
+
+        // var j = i2id(i);
+        // setBN(renderer.bnProgram, "bnMu", weights['bn' + j + '2']);
+        // setBN(renderer.bnProgram, "bnVar", weights['bn' + j + '3']);
+        // setBN(renderer.bnProgram, "bnA", weights['bn' + j + '0']);
+        // setBN(renderer.bnProgram, "bnB", weights['bn' + j + '1']);
+
+        // setPositionBuffer(renderer.bnProgram);
+        // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        // convolution
+        gl.useProgram(renderer.convProgram);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, renderer.convTargets[i].framebuffer);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "ZERO"), 0);
         gl.uniform2f(gl.getUniformLocation(renderer.convProgram, "iResolution"),
             renderer.width, renderer.height);
@@ -298,6 +263,7 @@ async function drawScene() {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D,
             i == 0 ? renderer.preprocTarget.texture : renderer.convTargets[i - 1].texture);
+        // gl.bindTexture(gl.TEXTURE_2D, renderer.bnTargets[i].texture);
         gl.uniform1i(gl.getUniformLocation(renderer.convProgram, "iSampler"), 0);
 
         gl.activeTexture(gl.TEXTURE1);
@@ -390,8 +356,11 @@ window.onload = function() {
     // framebuffers
     renderer.preprocTarget = createRenderTarget(renderer.width, renderer.height);
     renderer.convTargets = [];
-    for (var i = 0; i < renderer.nLayers; i++)
+    // renderer.bnTargets = [];
+    for (var i = 0; i < renderer.nLayers; i++) {
         renderer.convTargets.push(createRenderTarget(renderer.width, renderer.height));
+        // renderer.bnTargets.push(createRenderTarget(renderer.width, renderer.height));
+    }
 
     function updateRendererSize(w, h) {
         canvas.style.width = w + "px";
@@ -408,17 +377,25 @@ window.onload = function() {
         for (var i = 0; i < renderer.nLayers; i++) {
             destroyRenderTarget(renderer.convTargets[i]);
             renderer.convTargets[i] = createRenderTarget(w, h);
+            // destroyRenderTarget(renderer.bnTargets[i]);
+            // renderer.bnTargets[i] = createRenderTarget(w, h);
         }
         renderer.renderNeeded = true;
     }
-    updateRendererSize(window.innerWidth, window.innerHeight);
+    if (renderer.renderVideo)
+        updateRendererSize(window.innerWidth, window.innerHeight);
+    else
+        updateRendererSize(400, 900);
 
     // image testing - do this earlier
-    if (false) {
+    if (!renderer.renderVideo) {
         var imgid = 0;
         var imgw = 600;
         var loadTextureCallback = function(image) {
             renderer.image = image;
+            let w = image.width, h = image.height;
+            let sc = imgw / Math.max(w, h);
+            updateRendererSize(sc*w, sc*h);
             renderer.renderNeeded = true;
         };
         renderer.imageTexture = loadTexture(
@@ -437,7 +414,7 @@ window.onload = function() {
                 "train/images/train/" + i2id(imgid) + ".jpg",
                 loadTextureCallback
             );
-        });
+        }, { passive: false });
     }
 
     // weights/textures
@@ -449,6 +426,7 @@ window.onload = function() {
         "void main(){gl_Position=vertexPosition;}";
     let preprocSource = loadShaderSource("src/preproc.glsl");
     let convSource = loadShaderSource("src/conv.glsl");
+    // let bnSource = loadShaderSource("src/batchnorm.glsl");
     let highlightSource = loadShaderSource("src/highlight.glsl");
     console.timeEnd("load glsl code");
 
@@ -457,6 +435,7 @@ window.onload = function() {
     try {
         renderer.preprocProgram = createShaderProgram(vsSource, preprocSource);
         renderer.convProgram = createShaderProgram(vsSource, convSource);
+        // renderer.bnProgram = createShaderProgram(vsSource, bnSource);
         renderer.highlightProgram = createShaderProgram(vsSource, highlightSource);
     }
     catch (e) {
@@ -465,45 +444,51 @@ window.onload = function() {
     console.timeEnd("compile shader");
 
     // video
-    renderer.imageTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    renderer.image = document.createElement('video');
-    navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-            width: { min: 0, ideal: window.innerHeight, max: 1920 },
-            height: { min: 0, ideal: window.innerWidth, max: 1920 },
-            facingMode: "environment"
-        },
-    })
-        .then(stream => {
-            renderer.image.srcObject = stream;
-            renderer.image.play();
-            renderer.image.addEventListener('playing', () => {
-                renderer.renderNeeded = true;
-            });
-
+    if (renderer.renderVideo) {
+        renderer.imageTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        renderer.image = document.createElement('video');
+        navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+                width: { min: 0, ideal: window.innerHeight, max: 1920 },
+                height: { min: 0, ideal: window.innerWidth, max: 1920 },
+                facingMode: "environment"
+            },
         })
-        .catch(error => {
-            // alert("Failed to access camera.");
-            document.write('Error accessing camera: ', error);
-        });
+            .then(stream => {
+                renderer.image.srcObject = stream;
+                renderer.image.play();
+                renderer.image.addEventListener('playing', () => {
+                    renderer.renderNeeded = true;
+                });
 
+            })
+            .catch(error => {
+                // alert("Failed to access camera.");
+                document.write('Error accessing camera: ', error);
+                renderer.gl = null;
+            });
+    }
 
     // rendering
     function render() {
+        if (renderer.gl == null)
+            return;
         drawScene();
-        renderer.renderNeeded = true;
+        if (renderer.renderVideo)
+            renderer.renderNeeded = true;
         setTimeout(function() { requestAnimationFrame(render); }, 100);
     }
     requestAnimationFrame(render);
 
     // interactions
     window.addEventListener("resize", function(event) {
-        updateRendererSize(window.innerWidth, window.innerHeight);
+        if (renderer.renderVideo)
+            updateRendererSize(window.innerWidth, window.innerHeight);
     });
 
 }

@@ -6,7 +6,7 @@ out vec4 fragColor;
 uniform vec2 iResolution;
 
 uniform sampler2D iSampler;
-uniform vec3 bnMu, bnVar, bnA, bnB;  // batch norm, fixed
+uniform vec4 bnMu, bnVar, bnA, bnB;  // batch norm, fixed
 
 void meanVar(vec2 uv, out vec3 mean, out vec3 var) {
     vec2 sc = min(iResolution.x, iResolution.y) / iResolution.xy;
@@ -30,13 +30,9 @@ void main() {
     vec3 s = texture(iSampler, uv).xyz;
     vec3 mean, var;
     meanVar(uv, mean, var);
-    var = bnVar * (mean*mean)/(bnMu*bnMu);
-    //var = bnVar;
-    //mean = bnMu;
-    //fragColor = vec4(mean,1); return;
-    s = (s-mean)/sqrt(var+1e-5);
-    //fragColor = vec4(1.0/(1.0+exp(-0.5*s)),1); return;
-    s = s * bnA + bnB;
+    s = (s-mean)/sqrt(var+1e-2);
+    s = (s-bnMu.xyz)/sqrt(bnVar.xyz+1e-5);
+    s = s * bnA.xyz + bnB.xyz;
     s = max(s, 0.2*s);
     fragColor = vec4(s, 1);
 }
