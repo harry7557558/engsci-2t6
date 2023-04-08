@@ -31,6 +31,10 @@ void main() {
     vec3 mean, var;
     meanVar(uv, mean, var);
     s = (s-mean)/sqrt(var+1e-2);
+    if (s.x > s.y) s.xy = s.yx;
+    if (s.y > s.z) s.yz = s.zy;
+    if (s.x > s.y) s.xy = s.yx;
+    // fragColor = vec4(1.0/(1.0+exp(-s)), 1); return;
     s = (s-bnMu.xyz)/sqrt(bnVar.xyz+1e-5);
     s = s * bnA.xyz + bnB.xyz;
     s = max(s, 0.2*s);

@@ -8,7 +8,7 @@ var renderer = {
     nLayers: 12,
     width: -1,
     height: -1,
-    renderVideo: true,
+    renderVideo: false,
     image: null,
     imageTexture: null,
     renderNeeded: true
@@ -216,7 +216,7 @@ async function drawScene() {
     // preprocessing
     gl.useProgram(renderer.preprocProgram);
     gl.bindFramebuffer(gl.FRAMEBUFFER, renderer.preprocTarget.framebuffer);
-    //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, renderer.imageTexture);
     gl.uniform1i(gl.getUniformLocation(renderer.preprocProgram, "iSampler"), 0);
@@ -228,7 +228,7 @@ async function drawScene() {
     setBN(renderer.preprocProgram, "bnB", weights.bn001);
     setPositionBuffer(renderer.preprocProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    //return;
+    // return;
 
     for (var i = 0; i < renderer.nLayers; i++) {
         // batch norm
